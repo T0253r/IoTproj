@@ -1,4 +1,4 @@
-.vscode/
+**/.vscode/
 Arduino/build/
 Raspberry/__pycache__/
 *.py[cod]
