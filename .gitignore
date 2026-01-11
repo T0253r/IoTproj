@@ -1,0 +1,5 @@
+# These paths are relative to where the .gitignore file is
+Arduino/build/
+Raspberry/__pycache__/
+*.py[cod]
+.DS_Store
