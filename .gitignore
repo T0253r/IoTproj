@@ -1,4 +1,4 @@
-# These paths are relative to where the .gitignore file is
+.vscode/
 Arduino/build/
 Raspberry/__pycache__/
 *.py[cod]
