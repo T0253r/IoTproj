@@ -1,6 +1,7 @@
 import paho.mqtt.client as mqtt
 from queue import Queue, Empty
 import threading
+import time
 
 BROKER = "127.0.0.1"
 PORT = 1883
@@ -8,6 +9,8 @@ PORT = 1883
 
 response_queue = Queue()
 current_temp = { "room1" : 0}
+
+client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, "server")
 
 def SEND(x):
     return f"room{x}/listen"
@@ -25,10 +28,6 @@ def on_message(client, userdata, msg):
             _, room, temp, target = parts
             current_temp[room] = (temp, target)
 
-
-
-client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, "server")
-client.on_message = on_message
 def setupMQQT():
     client.connect(BROKER, PORT)
     client.loop_start()
@@ -48,20 +47,19 @@ def send_to(roomID, temp, timeout=3, retries=3):
         except Empty:
             send_to(roomID, temp, timeout, retries-1)
 
-import time
 def ping_loop(roomID):
     topic = SEND(roomID)
     while True:
         client.publish(topic, "ping")
         time.sleep(2)
 
-setupMQQT()
-subscribe(LISTEN(1))
+def start():
+    setupMQQT()
+    client.on_message = on_message
+    subscribe(LISTEN(1))
+    threading.Thread(target=ping_loop, args=(1,), daemon=True).start()
 
-threading.Thread(target=ping_loop, args=(1,), daemon=True).start()
-
-while True:
+"""while True:
     temp = input("Target temp: ")
     print(current_temp["room1"])
-    print(send_to(1, temp))
-
+    print(send_to(1, temp))"""
