@@ -1,65 +1,113 @@
-import paho.mqtt.client as mqtt
-from queue import Queue, Empty
-import threading
-import time
+#!/usr/bin/env python3
 
+import time
+import sqlite3
+import paho.mqtt.client as mqtt
+import logging
+import sys
+import os
+
+DB_PATH = "/home/akkm/iot.db"
 BROKER = "127.0.0.1"
 PORT = 1883
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - MQTT - %(message)s')
 
-response_queue = Queue()
-current_temp = { "room1" : 0}
+known_controllers = set()
 
-client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, "server")
+def get_db_connection():
+    if not os.path.exists(DB_PATH):
+        logging.critical("No database at {DB_PATH}. Run init_db.py")
+        sys.exit(1)
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL;") 
+    return conn
 
-def SEND(x):
-    return f"room{x}/listen"
 
-def LISTEN(x):
-    return f"room{x}/send"
+def load_known_controllers():
+    try:
+        with get_db_connection() as conn:
+            rows = conn.execute("SELECT controller_id FROM rooms").fetchall()
+            for row in rows:
+                if row['controller_id']:
+                    known_controllers.add(row['controller_id'])
+        logging.info(f"Loaded known controllers: {known_controllers}")
+    except Exception as e:
+        logging.error(f"Error laoding controllers: {e}")
+
+def register_new_room(room_id):
+    try:
+        with get_db_connection() as conn:
+            conn.execute(
+                "INSERT OR IGNORE INTO rooms (name, controller_id) VALUES (?, ?)", 
+                (f"Nowy {room_id}", room_id)
+            )
+            logging.info(f"Registered new device: {room_id}")
+            known_controllers.add(room_id)
+    except Exception as e:
+        logging.error(f"Room registration error: {e}")
 
 def on_message(client, userdata, msg):
-    payload = msg.payload.decode()
-    if payload.startswith("OK"):
-        response_queue.put(payload)
-    elif payload.startswith("ping"):
-        parts = payload.split()
-        if len(parts) == 4:
-            _, room, temp, target = parts
-            current_temp[room] = (temp, target)
+    try:
+        payload = msg.payload.decode()
+        if payload.startswith("ping"):
+            parts = payload.split()
+            if len(parts) >= 3: 
+                room_id = parts[1]
+                current_temp = float(parts[2])
+                
+                if room_id not in known_controllers:
+                    register_new_room(room_id)
 
-def setupMQQT():
-    client.connect(BROKER, PORT)
-    client.loop_start()
+                with get_db_connection() as conn:
+                    conn.execute("""
+                        UPDATE rooms 
+                        SET current_temp = ?, last_update = CURRENT_TIMESTAMP 
+                        WHERE controller_id = ?
+                    """, (current_temp, room_id))
+                
+    except Exception as e:
+        logging.error(f"on_message error: {e}")
 
-def subscribe(listen):
-    client.subscribe(listen)
-
-
-def send_to(roomID, temp, timeout=3, retries=3):
-    if retries <=0:
-        raise TimeoutError("Brak OK")
-
-    for attempt in range(1, retries + 1):
-        client.publish(SEND(roomID), f"{temp}")
-        try:
-            return response_queue.get(timeout=timeout)
-        except Empty:
-            send_to(roomID, temp, timeout, retries-1)
-
-def ping_loop(roomID):
-    topic = SEND(roomID)
+def sync_loop(client):
     while True:
-        client.publish(topic, "ping")
+        try:
+            with get_db_connection() as conn:
+                rooms = conn.execute("SELECT controller_id, target_temp FROM rooms").fetchall()
+            
+            for room in rooms:
+                c_id = room['controller_id']
+                target = room['target_temp']
+                if c_id and target is not None:
+                    client.publish(f"{c_id}/listen", str(int(target)))
+
+            client.publish("ping", "keep-alive")
+            
+        except Exception as e:
+            logging.error(f"Sync error: {e}")
+            
         time.sleep(2)
 
-def start():
-    setupMQQT()
-    client.on_message = on_message
-    subscribe(LISTEN(1))
-    threading.Thread(target=ping_loop, args=(1,), daemon=True).start()
+def main():
+    load_known_controllers()
 
-"""while True:
-    temp = input("Target temp: ")
-    print(current_temp["room1"])
-    print(send_to(1, temp))"""
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+    client.on_message = on_message
+    
+    logging.info("Connecting with the borker...")
+    try:
+        client.connect(BROKER, 1883, 60)
+    except Exception as e:
+        logging.critical(f"MQTT connection error: {e}")
+        sys.exit(1)
+
+    client.subscribe("+/send")
+    client.loop_start()
+    
+    logging.info("MQTT Daemon ready")
+    
+    sync_loop(client)
+
+if __name__ == "__main__":
+    main()

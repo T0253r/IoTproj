@@ -6,3 +6,7 @@
 
  ### Robimy jeden requirements.txt i nie robimy venvów na malinie
  Ostatnio wyszły z tego problemy, a jak tamten kod ma działać jako system service to lepiej wszystkie dependency zainstalować ogólnosystemowo
+
+ ### Lokacja bazy danych
+ Dalej nie wiem czy lepiej jest aby to była jakaś względna czy bezwzględna ścieżka, ale na razie wydaje mi się że lepiej to zrobić bezwzględnie (łatwiej usługi systemowe skonfigurować)
+ Aktualna ścieżka bazy: **/home/akkm/iot.db**

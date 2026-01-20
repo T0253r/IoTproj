@@ -1,4 +1,0 @@
-- monitor lub jakiś kontroler powinien ustawiać automatycznie temperaturę (chyba miałoby sens że monitor)
-- chyba lepiej zrobić jeden skrypt incjalizujący bazę, której będzie wszystko używać
-- czemu online nie jest bool/binary?
-- czy current_temp chcemy trzymać w bazie?

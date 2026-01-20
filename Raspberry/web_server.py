@@ -1,50 +1,26 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, g
 import sqlite3
-import threading 
-import time
 import os
-import Raspberry.mqtt_controller as mqttTemp
-import Raspberry.devices_monitor as devicesMonitor
 
 app = Flask(__name__)
 app.secret_key = 'tajny_klucz'
-#DB_PATH = "/home/akkm/Documents/connectedDevicesMonitor/roomTemp.db" # czy nie wolimy względnej ścieżki i żeby baza była w plikach projektu?
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, "roomTempDb.db")
+
+DB_PATH = "/home/akkm/iot.db"
 
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
-        if not os.path.exists(DB_PATH): return None
+        if not os.path.exists(DB_PATH):
+            raise FileNotFoundError(f"No database at {DB_PATH}. Run init_db.py")
         db = g._database = sqlite3.connect(DB_PATH)
         db.row_factory = sqlite3.Row
+        db.execute("PRAGMA journal_mode=WAL;")
     return db
 
-def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS devices
-                 (mac TEXT PRIMARY KEY,
-                  ip TEXT, hostname TEXT,
-                  last_seen TIMESTAMP,
-                  online INTEGER)''')
-    c.execute("UPDATE devices SET online = 0")
-    c.execute('''CREATE TABLE IF NOT EXISTS rooms (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        name TEXT NOT NULL,
-                        controller_id TEXT,
-                        locked_by TEXT
-                      )''')
-    c.execute('''CREATE TABLE IF NOT EXISTS user_rooms (
-                        user_mac TEXT NOT NULL,
-                        room_id INTEGER NOT NULL,
-                        temp REAL NOT NULL,
-                        PRIMARY KEY (user_mac, room_id),
-                        FOREIGN KEY(user_mac) REFERENCES users(mac) ON DELETE CASCADE,
-                        FOREIGN KEY(room_id) REFERENCES rooms(id) ON DELETE CASCADE
-                      )''')
-    conn.commit()
-    return conn
+@app.teardown_appcontext
+def close_connection(exception):
+    db = getattr(g, '_database', None)
+    if db is not None: db.close()
 
 def get_current_user_mac():
     ip = request.remote_addr
@@ -77,43 +53,6 @@ def release_stale_locks(room_id):
             db.commit()
             return True
     return False
-
-@app.teardown_appcontext
-def close_connection(exception):
-    db = getattr(g, '_database', None)
-    if db is not None: db.close()
-
-
-"""def background_monitor():
-    while True:
-        with app.app_context():
-            db = get_db()
-            if db:
-                try:
-                    cur = db.cursor()
-                    cur.execute("SELECT id FROM rooms")
-                    rooms = cur.fetchall()
-                    
-                    for room in rooms:
-                        r_id = str(room['id'])
-                        
-                        # 1. Używamy metody subscribe z Twojego modułu
-                        mqttTemp.subscribe(mqttTemp.LISTEN(r_id))
-                        
-                        # 2. Wysyłamy ping ręcznie używając klienta z Twojego modułu
-                        # (Możesz też dodać metodę 'ping(id)' do mqtt_controller, żeby było czyściej)
-                        topic = mqttTemp.SEND(r_id)
-                        mqttTemp.client.publish(topic, "ping")
-                        
-                except Exception as e:
-                    print(f"Monitor error: {e}")
-        
-        time.sleep(2) # Ping co 2 sekundy"""
-
-# --- START APLIKACJI ---
-# Uruchamiamy mqttTemp i wątek monitorujący przed startem serwera
-
-#threading.Thread(target=background_monitor, daemon=True).start() - tempControl will take care of this
 
 
 # --- WIDOKI ---
@@ -293,7 +232,4 @@ def profile():
     return render_template('profile.html', user=user, rooms=rooms, mac=user_mac)
 
 if __name__ == '__main__':
-    init_db()
-    #mqttTemp.start()
-    #devicesMonitor.main()
     app.run(host='0.0.0.0', port=5000, debug=True)
