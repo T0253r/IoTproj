@@ -3,3 +3,5 @@ Arduino/build/
 Raspberry/__pycache__/
 *.py[cod]
 .DS_Store
+.venv/
+Raspberry/roomTempDb.db

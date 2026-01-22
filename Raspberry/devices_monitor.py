@@ -5,9 +5,10 @@ import sqlite3
 import logging
 from datetime import datetime
 from scapy.all import ARP, Ether, srp
+import os
 
 LEASE_FILE = "/var/lib/misc/dnsmasq.leases"
-DB_PATH = "/home/akkm/Documents/connectedDevicesMonitor/connectedDevices.db"
+DB_PATH = "/home/akkm/iot.db"
 INTERFACE = "wlan0"
 
 logging.basicConfig(
@@ -15,18 +16,6 @@ logging.basicConfig(
     format='%(asctime)s [%(levelname)s] %(message)s',
     handlers=[logging.StreamHandler()]
 )
-
-def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS devices
-                 (mac TEXT PRIMARY KEY,
-                  ip TEXT, hostname TEXT,
-                  last_seen TIMESTAMP,
-                  online INTEGER)''')
-    c.execute("UPDATE devices SET online = 0")
-    conn.commit()
-    return conn
 
 def get_dhcp_devices():
     devices = {}
@@ -72,7 +61,7 @@ def update_database(conn, dhcp_data, active_ips):
 
 def main():
     logging.info("Starting Connected Device Monitor Service...")
-    conn = init_db()
+    conn = sqlite3.connect(DB_PATH)
     
     while True:
         logging.info("Checking for connected devices")
