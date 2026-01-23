@@ -7,7 +7,7 @@ import sys
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - INIT_DB - %(message)s')
 
-DB_PATH = "/home/akkm/iot.db"
+DB_PATH = "/var/lib/iot/iot.db"
 
 def main():
 
@@ -22,22 +22,28 @@ def main():
     c.execute('''CREATE TABLE IF NOT EXISTS devices
                  (mac TEXT PRIMARY KEY,
                   ip TEXT, hostname TEXT,
-                  last_seen TIMESTAMP,
+                  username TEXT,
                   online INTEGER)''')
     c.execute("UPDATE devices SET online = 0")
-    c.execute('''CREATE TABLE IF NOT EXISTS rooms (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        name TEXT NOT NULL,
-                        controller_id TEXT,
-                        locked_by TEXT
+    c.execute('''CREATE TABLE IF NOT EXISTS controllers (
+                        controller_id INTEGER PRIMARY KEY,
+                        name TEXT,
+                        target_temp REAL,
+                        set_by TEXT,
+                        curr_temp REAL,
+                        last_seen TIMESTAMP
                       )''')
-    c.execute('''CREATE TABLE IF NOT EXISTS user_rooms (
-                        user_mac TEXT NOT NULL,
-                        room_id INTEGER NOT NULL,
-                        temp REAL NOT NULL,
-                        PRIMARY KEY (user_mac, room_id),
-                        FOREIGN KEY(user_mac) REFERENCES users(mac) ON DELETE CASCADE,
-                        FOREIGN KEY(room_id) REFERENCES rooms(id) ON DELETE CASCADE
+    c.execute('''CREATE TABLE IF NOT EXISTS preferences (
+                        temp REAL,
+                        fk_user_mac TEXT,
+                        
+                        fk_controller_id INTEGER,
+                        PRIMARY KEY (fk_user_mac, fk_controller_id),
+              
+                        FOREIGN KEY (fk_user_mac) REFERENCES devices(mac)
+                            ON DELETE CASCADE ON UPDATE CASCADE,
+                        FOREIGN KEY (fk_controller_id) REFERENCES controllers(controller_id)
+                            ON DELETE CASCADE ON UPDATE CASCADE
                       )''')
     conn.commit()
     conn.close()
