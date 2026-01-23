@@ -35,7 +35,7 @@ def load_known_controllers():
                     known_controllers.add(row['controller_id'])
         logging.info(f"Loaded known controllers: {known_controllers}")
     except Exception as e:
-        logging.error(f"Error laoding controllers: {e}")
+        logging.error(f"Error loading controllers: {e}")
 
 def register_new_controller(controller_id):
     try:
@@ -71,44 +71,52 @@ def on_message(client, userdata, msg):
         logging.error(f"on_message error: {e}")
 
 def process_presence_logic():
-    update_sql = '''
-    WITH RankedTemps AS (
-        SELECT 
-            p.fk_controller_id, 
-            p.temp,
-            devpref.mac as new_user_mac, -- Changed to MAC to match Foreign Key
-            ROW_NUMBER() OVER (
-                PARTITION BY p.fk_controller_id 
-                ORDER BY p.temp DESC
-            ) as rank
-        FROM preferences p
-        JOIN controllers c ON p.fk_controller_id = c.controller_id
-        JOIN devices devpref ON p.fk_user_mac = devpref.mac
-        LEFT JOIN devices devset ON c.set_by = devset.mac
-        WHERE devpref.online = 1
-        AND (c.priority < 2 OR c.set_by IS NULL OR devset.online != 1)
-    )
-    UPDATE controllers
-    SET target_temp = rt.temp,
-        set_by = rt.new_user_mac,
-        priority = 1
-    FROM RankedTemps rt
-    WHERE controllers.controller_id = rt.fk_controller_id
-    AND rt.rank = 1;
-    '''
     try:
         with get_db_connection() as conn:
-            conn.execute(update_sql)
-            conn.commit()
-            logging.info(f"Controllers updated based on highest online user preferences. Rows affected: {conn.rowcount}")
-    except sqlite3.OperationalError as e:
-        logging.error(f"SQL Update failed (likely old SQLite version): {e}")
 
+            # clear set temperatures from users no longer online
+            conn.execute('''
+                UPDATE controllers
+                SET target_temp = ?, 
+                    set_by = NULL, 
+                    priority = 0
+                WHERE set_by IN (SELECT mac FROM devices WHERE online != 1)
+            ''', (MIN_TEMP,))
+
+            # set automatic temps where no manual ones are defined
+            conn.execute('''
+                UPDATE controllers
+                SET target_temp = temp_updates.temp,
+                    set_by = temp_updates.mac,
+                    priority = 1
+                FROM (
+                    SELECT 
+                        p.fk_controller_id, 
+                        p.temp, 
+                        dev.mac,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY p.fk_controller_id 
+                            ORDER BY p.temp DESC, dev.mac ASC
+                        ) as rank_id
+                    FROM preferences p
+                    JOIN devices dev ON p.fk_user_mac = dev.mac
+                    WHERE dev.online = 1
+                ) AS temp_updates
+                WHERE controllers.controller_id = temp_updates.fk_controller_id
+                AND temp_updates.rank_id = 1
+                AND (controllers.set_by IS NULL OR controllers.priority < 2);
+            ''')
+
+    except Exception as e:
+        print(f"Error: {e}")
 
 
 def sync_loop(client):
     while True:
         try:
+
+            process_presence_logic()
+
             with get_db_connection() as conn:
                 controllers = conn.execute("SELECT controller_id, target_temp FROM controllers").fetchall()
             
