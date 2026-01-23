@@ -1,6 +1,6 @@
 ## Co robi kod i jak ma być odpalany
  - db_init.py - inicjalizacja bazy danych, odpalany ręcznie
- - mqtt_controller.py - komunikuje się ze sterownikami po mqtt, czyta z bazy potrzebne dane (temperatury zadane przez użytkowników, dane o temperaturach aktualnych  i automatycznych oraz dane o podłączonych urządzeniach), jest odpowiedzialny za ustawianie zadanych temperatur na sterownikach (manulanych i automatycznych), działa jako system service
+ - heating_manager.py - komunikuje się ze kontrolerami po mqtt, czyta z bazy potrzebne dane (temperatury zadane przez użytkowników, dane o temperaturach aktualnych  i automatycznych oraz dane o podłączonych urządzeniach), jest odpowiedzialny za ustawianie zadanych temperatur na sterownikach (manulanych i automatycznych), działa jako system service
  - devices_monitor.py - aktualizacja informacji o podłączonych urządzeniach w bazie danych, działa jako system service
  - web_server.py - serwer webowy na którym użytkownicy mogą sobie klikać i ogólnie wchodzić w interakcję, pisze po bazie danych, nie komunikuje się po mqtt, trzeba użyć gunicorn (albo czegoś innego) do odpalenia tego jako system service
 
@@ -10,3 +10,8 @@
  ### Lokacja bazy danych
  Dalej nie wiem czy lepiej jest aby to była jakaś względna czy bezwzględna ścieżka, ale na razie wydaje mi się że lepiej to zrobić bezwzględnie (łatwiej usługi systemowe skonfigurować)
  Aktualna ścieżka bazy: **/home/akkm/iot.db**
+
+ ### Kanały mqtt
+  - controllers/x/set-temp -> malina publikuje zadane temperatury dla sterownika z ID = x
+  - controllers/x/read-temp -> sterownik z ID = x publikuje odczytaną temperaturę
+Te dwa tematy per sterownik wystarczą, bo i tak są wysyłane regularne update'y, które działają jako heartbeat

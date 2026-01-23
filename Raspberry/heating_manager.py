@@ -17,7 +17,7 @@ known_controllers = set()
 
 def get_db_connection():
     if not os.path.exists(DB_PATH):
-        logging.critical("No database at {DB_PATH}. Run init_db.py")
+        logging.critical(f"No database at {DB_PATH}. Run init_db.py")
         sys.exit(1)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -28,7 +28,7 @@ def get_db_connection():
 def load_known_controllers():
     try:
         with get_db_connection() as conn:
-            rows = conn.execute("SELECT controller_id FROM rooms").fetchall()
+            rows = conn.execute("SELECT controller_id FROM rooms").fetchall() # bazodanowe rzeczy do zmiany
             for row in rows:
                 if row['controller_id']:
                     known_controllers.add(row['controller_id'])
@@ -36,36 +36,35 @@ def load_known_controllers():
     except Exception as e:
         logging.error(f"Error laoding controllers: {e}")
 
-def register_new_room(room_id):
+def register_new_controller(controller_id):
     try:
         with get_db_connection() as conn:
-            conn.execute(
-                "INSERT OR IGNORE INTO rooms (name, controller_id) VALUES (?, ?)", 
-                (f"Nowy {room_id}", room_id)
+            conn.execute( 
+                "INSERT OR IGNORE INTO rooms (name, controller_id) VALUES (?, ?)", # bazodanowe rzeczy do zmiany
+                (f"Nowy {controller_id}", controller_id)
             )
-            logging.info(f"Registered new device: {room_id}")
-            known_controllers.add(room_id)
+            logging.info(f"Registered new controller: {controller_id}")
+            known_controllers.add(controller_id)
     except Exception as e:
-        logging.error(f"Room registration error: {e}")
+        logging.error(f"Controller registration error: {e}")
 
 def on_message(client, userdata, msg):
     try:
+        topic = msg.topic
         payload = msg.payload.decode()
-        if payload.startswith("ping"):
-            parts = payload.split()
-            if len(parts) >= 3: 
-                room_id = parts[1]
-                current_temp = float(parts[2])
-                
-                if room_id not in known_controllers:
-                    register_new_room(room_id)
 
-                with get_db_connection() as conn:
-                    conn.execute("""
-                        UPDATE rooms 
-                        SET current_temp = ?, last_update = CURRENT_TIMESTAMP 
-                        WHERE controller_id = ?
-                    """, (current_temp, room_id))
+        controller_id = topic.split('/')[1]
+        current_temp = float(payload)
+        
+        if controller_id not in known_controllers:
+            register_new_controller(controller_id)
+
+        with get_db_connection() as conn: # bazodanowe rzeczy do zmiany
+            conn.execute("""
+                UPDATE rooms 
+                SET current_temp = ?, last_update = CURRENT_TIMESTAMP 
+                WHERE controller_id = ?
+            """, (current_temp, controller_id))
                 
     except Exception as e:
         logging.error(f"on_message error: {e}")
@@ -74,20 +73,18 @@ def sync_loop(client):
     while True:
         try:
             with get_db_connection() as conn:
-                rooms = conn.execute("SELECT controller_id, target_temp FROM rooms").fetchall()
+                controllers = conn.execute("SELECT controller_id, target_temp FROM rooms").fetchall()
             
-            for room in rooms:
-                c_id = room['controller_id']
-                target = room['target_temp']
+            for controller in controllers:
+                c_id = controller['controller_id']
+                target = controller['target_temp']
                 if c_id and target is not None:
-                    client.publish(f"{c_id}/listen", str(int(target)))
-
-            client.publish("ping", "keep-alive")
+                    client.publish(f"controllers/{c_id}/set-temp", str(int(target)))
             
         except Exception as e:
             logging.error(f"Sync error: {e}")
             
-        time.sleep(2)
+        time.sleep(5)
 
 def main():
     load_known_controllers()
@@ -95,14 +92,14 @@ def main():
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
     client.on_message = on_message
     
-    logging.info("Connecting with the borker...")
+    logging.info("Connecting with the broker...")
     try:
-        client.connect(BROKER, 1883, 60)
+        client.connect(BROKER, PORT)
     except Exception as e:
         logging.critical(f"MQTT connection error: {e}")
         sys.exit(1)
 
-    client.subscribe("+/send")
+    client.subscribe("controllers/+/read-temp")
     client.loop_start()
     
     logging.info("MQTT Daemon ready")
