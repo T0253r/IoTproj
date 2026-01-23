@@ -7,7 +7,7 @@ import logging
 import sys
 import os
 
-DB_PATH = "/home/akkm/iot.db"
+DB_PATH = "/var/lib/iot/iot.db"
 BROKER = "127.0.0.1"
 PORT = 1883
 

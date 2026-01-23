@@ -9,7 +9,7 @@
 
  ### Lokacja bazy danych
  Dalej nie wiem czy lepiej jest aby to była jakaś względna czy bezwzględna ścieżka, ale na razie wydaje mi się że lepiej to zrobić bezwzględnie (łatwiej usługi systemowe skonfigurować)
- Aktualna ścieżka bazy: **/home/akkm/iot.db**
+ Aktualna ścieżka bazy: **/var/lib/iot/iot.db**
 
  ### Kanały mqtt
   - controllers/x/target-temp -> malina publikuje zadane temperatury dla sterownika z ID = x

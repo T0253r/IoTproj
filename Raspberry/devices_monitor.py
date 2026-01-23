@@ -8,7 +8,7 @@ from scapy.all import ARP, Ether, srp
 import os
 
 LEASE_FILE = "/var/lib/misc/dnsmasq.leases"
-DB_PATH = "/home/akkm/iot.db"
+DB_PATH = "/var/lib/iot/iot.db"
 INTERFACE = "wlan0"
 
 logging.basicConfig(
