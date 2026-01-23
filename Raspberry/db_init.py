@@ -32,7 +32,11 @@ def main():
                         target_temp REAL,
                         set_by TEXT,
                         curr_temp REAL,
-                        last_seen TIMESTAMP
+                        last_seen TIMESTAMP,
+                        priority INTEGER
+              
+                        FOREIGN KEY (set_by) REFERENCES devices(mac)
+                            ON DELETE SET NULL ON UPDATE CASCADE
                       )''')
     c.execute('''CREATE TABLE IF NOT EXISTS preferences (
                         temp REAL,
