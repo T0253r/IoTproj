@@ -12,6 +12,6 @@
  Aktualna ścieżka bazy: **/home/akkm/iot.db**
 
  ### Kanały mqtt
-  - controllers/x/set-temp -> malina publikuje zadane temperatury dla sterownika z ID = x
-  - controllers/x/read-temp -> sterownik z ID = x publikuje odczytaną temperaturę
+  - controllers/x/target-temp -> malina publikuje zadane temperatury dla sterownika z ID = x
+  - controllers/x/curr-temp -> sterownik z ID = x publikuje odczytaną temperaturę
 Te dwa tematy per sterownik wystarczą, bo i tak są wysyłane regularne update'y, które działają jako heartbeat

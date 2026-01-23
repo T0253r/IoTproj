@@ -79,7 +79,7 @@ def sync_loop(client):
                 c_id = controller['controller_id']
                 target = controller['target_temp']
                 if c_id and target is not None:
-                    client.publish(f"controllers/{c_id}/set-temp", str(int(target)))
+                    client.publish(f"controllers/{c_id}/target-temp", str(int(target)))
             
         except Exception as e:
             logging.error(f"Sync error: {e}")
@@ -99,7 +99,7 @@ def main():
         logging.critical(f"MQTT connection error: {e}")
         sys.exit(1)
 
-    client.subscribe("controllers/+/read-temp")
+    client.subscribe("controllers/+/curr-temp")
     client.loop_start()
     
     logging.info("MQTT Daemon ready")

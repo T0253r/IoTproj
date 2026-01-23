@@ -11,8 +11,8 @@ const char* password = "akkm1234";
 const char* mqtt_server = "192.168.2.1";
 const int mqtt_port = 1883;
 
-const char* topic_read_temp = "controllers/" CONTROLLER_ID "/read-temp";
-const char* topic_set_temp = "controllers/" CONTROLLER_ID "/set-temp";
+const char* topic_curr_temp = "controllers/" CONTROLLER_ID "/curr-temp";
+const char* topic_target_temp = "controllers/" CONTROLLER_ID "/target-temp";
 
 const long REPORT_INTERVAL = 5000;
 const long SERVER_TIMEOUT = 60000;
@@ -57,7 +57,7 @@ void connectMQTT() {
     Serial.print(":");
     Serial.println(mqtt_port);
     if(client.connect(CONTROLLER_ID)) {
-      client.subscribe(topic_set_temp);
+      client.subscribe(topic_target_temp);
     }
     delay(1000);
   }
@@ -100,7 +100,7 @@ void loop() {
   if (now - lastReport > REPORT_INTERVAL) {
     lastReport = now;
     Serial.println(String(CONTROLLER_ID) + " measured temp: " + current_temp);
-    client.publish(topic_read_temp, String(current_temp).c_str());
+    client.publish(topic_curr_temp, String(current_temp).c_str());
   }
 
   // zmniejsz temperature do minimum, jesli nie bylo wiadomosci od serwera
@@ -114,7 +114,7 @@ void loop() {
     Serial.println("Temp goal met, turning the heating off");
   } else if (current_temp <= (target_temp - HYSTERESIS)){
     analogWrite(LED_PIN, 255);
-    Serial.println("Temp below set-temp, turning the heating on");
+    Serial.println("Temp below target-temp, turning the heating on");
   }
 }
 
