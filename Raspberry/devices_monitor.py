@@ -100,7 +100,7 @@ def main():
         except Exception as e:
             logging.error(f"Critical Monitor Loop Error: {e}")
         
-        time.sleep(60)
+        time.sleep(20)
         
 
 if __name__ == "__main__":
