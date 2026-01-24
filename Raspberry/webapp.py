@@ -13,7 +13,6 @@ def get_db_connection():
 def get_user_by_ip(ip):
     """Looks up the device record in the DB based on current IP address."""
     conn = get_db_connection()
-    # We look for the device assigned this IP that is currently flagged as online
     user = conn.execute('SELECT * FROM devices WHERE ip = ? AND online = 1', (ip,)).fetchone()
     conn.close()
     return user
@@ -21,15 +20,37 @@ def get_user_by_ip(ip):
 @app.route('/')
 def index():
     visitor_ip = request.remote_addr
-    # Find the user's database record using their IP
     current_user = get_user_by_ip(visitor_ip)
     
     conn = get_db_connection()
+    
+    # Fetch all devices
     all_devices = conn.execute('SELECT * FROM devices ORDER BY online DESC').fetchall()
+    
+    # Fetch controllers. 
+    # We LEFT JOIN on preferences to get THIS specific user's preference for each controller
+    # so we can pre-fill the preference input field.
+    user_mac = current_user['mac'] if current_user else None
+    
+    controllers_query = '''
+        SELECT 
+            c.*, 
+            p.temp as user_pref_temp,
+            d.username as locked_by_name
+        FROM controllers c
+        LEFT JOIN preferences p 
+            ON c.controller_id = p.fk_controller_id 
+            AND p.fk_user_mac = ?
+        LEFT JOIN devices d
+            ON c.set_by = d.mac
+    '''
+    all_controllers = conn.execute(controllers_query, (user_mac,)).fetchall()
+    
     conn.close()
     
     return render_template('index.html', 
                            devices=all_devices, 
+                           controllers=all_controllers,
                            current_user=current_user,
                            visitor_ip=visitor_ip)
 
@@ -37,22 +58,58 @@ def index():
 def update_username():
     visitor_ip = request.remote_addr
     new_name = request.form.get('username')
-    
-    # Security: Look up the user by IP again to ensure they own the MAC
     user_record = get_user_by_ip(visitor_ip)
     
     if not user_record:
-        return "Access Denied: Your IP is not recognized in the device database.", 403
+        return "Access Denied: Your IP is not recognized.", 403
 
-    # Use the MAC found in our DB lookup to perform the update
-    # This prevents users from spoofing other MAC addresses in the form
-    target_mac = user_record['mac']
-    
     conn = get_db_connection()
-    conn.execute('UPDATE devices SET username = ? WHERE mac = ?', (new_name, target_mac))
+    conn.execute('UPDATE devices SET username = ? WHERE mac = ?', (new_name, user_record['mac']))
     conn.commit()
     conn.close()
+    return redirect(url_for('index'))
+
+@app.route('/set_manual_temp', methods=['POST'])
+def set_manual_temp():
+    visitor_ip = request.remote_addr
+    controller_id = request.form.get('controller_id')
+    target_temp = request.form.get('target_temp')
+
+    user_record = get_user_by_ip(visitor_ip)
+    if not user_record:
+        return "Access Denied", 403
+
+    conn = get_db_connection()
+    # Logic: Set priority to 2, set_by to current user's MAC
+    conn.execute('''
+        UPDATE controllers 
+        SET target_temp = ?, set_by = ?, priority = 2 
+        WHERE controller_id = ?
+    ''', (target_temp, user_record['mac'], controller_id))
     
+    conn.commit()
+    conn.close()
+    return redirect(url_for('index'))
+
+@app.route('/set_preference', methods=['POST'])
+def set_preference():
+    visitor_ip = request.remote_addr
+    controller_id = request.form.get('controller_id')
+    pref_temp = request.form.get('pref_temp')
+
+    user_record = get_user_by_ip(visitor_ip)
+    if not user_record:
+        return "Access Denied", 403
+
+    conn = get_db_connection()
+    # Logic: Insert or Replace preference for this user/controller combo
+    conn.execute('''
+        INSERT OR REPLACE INTO preferences (temp, fk_user_mac, fk_controller_id)
+        VALUES (?, ?, ?)
+    ''', (pref_temp, user_record['mac'], controller_id))
+    
+    conn.commit()
+    conn.close()
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
