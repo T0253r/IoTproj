@@ -112,5 +112,41 @@ def set_preference():
     conn.close()
     return redirect(url_for('index'))
 
+@app.route('/clear_preference', methods=['POST'])
+def clear_preference():
+    visitor_ip = request.remote_addr
+    controller_id = request.form.get('controller_id')
+
+    user_record = get_user_by_ip(visitor_ip)
+    if not user_record:
+        return "Access denied", 403
+    
+    conn = get_db_connection()
+    conn.execute('''
+        DELETE FROM preferences
+        where fk_user_mac = ? AND fk_controller_id = ?
+    ''', (user_record['mac'], controller_id))
+
+    conn.commit()
+    conn.close()
+    return redirect(url_for('index'))
+
+@app.route('/delete_controller', methods=['POST'])
+def delete_controller():
+    visitor_ip = request.remote_addr
+    controller_id = request.form.get('controller_id')
+
+    # Optional: You might want to restrict this to admins only, 
+    # but for now we just check if they are a valid user.
+    user_record = get_user_by_ip(visitor_ip)
+    if not user_record:
+        return "Access Denied", 403
+
+    conn = get_db_connection()
+    conn.execute('DELETE FROM controllers WHERE controller_id = ?', (controller_id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('index'))
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
