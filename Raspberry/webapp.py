@@ -6,8 +6,8 @@ import logging
 import os
 
 app = Flask(__name__)
-#DB_PATH = "/var/lib/iot/iot.db"
-DB_PATH = "iot.db" # relative path for testing
+DB_PATH = "/var/lib/iot/iot.db"
+#DB_PATH = "iot.db" # relative path for testing
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
