@@ -6,6 +6,7 @@ import logging
 from datetime import datetime
 from scapy.all import ARP, Ether, srp
 import os
+import sys
 
 LEASE_FILE = "/var/lib/misc/dnsmasq.leases"
 DB_PATH = "/var/lib/iot/iot.db"
