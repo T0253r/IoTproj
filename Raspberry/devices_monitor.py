@@ -42,11 +42,11 @@ def get_dhcp_devices():
 def verify_active(ip_list):
     if not ip_list:
         return []
-    
-    ips_to_scan = " ".join(ip_list)
+
     try:
-        ans, _ = srp(Ether(dst="ff:ff:ff:ff:ff:ff")/ARP(pdst=ips_to_scan), 
+        ans, _ = srp(Ether(dst="ff:ff:ff:ff:ff:ff")/ARP(pdst=ip_list), 
                      timeout=2, verbose=False, iface=INTERFACE)
+        
         return [received.psrc for sent, received in ans]
     except Exception as e:
         logging.error(f"Scan failed: {e}")
