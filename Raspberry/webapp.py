@@ -11,7 +11,6 @@ def get_db_connection():
     return conn
 
 def get_user_by_ip(ip):
-    """Looks up the device record in the DB based on current IP address."""
     conn = get_db_connection()
     user = conn.execute('SELECT * FROM devices WHERE ip = ? AND online = 1', (ip,)).fetchone()
     conn.close()
@@ -21,16 +20,9 @@ def get_user_by_ip(ip):
 def index():
     visitor_ip = request.remote_addr
     current_user = get_user_by_ip(visitor_ip)
-    
-    conn = get_db_connection()
-    
-    # Fetch all devices
-    all_devices = conn.execute('SELECT * FROM devices ORDER BY online DESC').fetchall()
-    
-    # Fetch controllers. 
-    # We LEFT JOIN on preferences to get THIS specific user's preference for each controller
-    # so we can pre-fill the preference input field.
     user_mac = current_user['mac'] if current_user else None
+
+    conn = get_db_connection()
     
     controllers_query = '''
         SELECT 
@@ -49,7 +41,6 @@ def index():
     conn.close()
     
     return render_template('index.html', 
-                           devices=all_devices, 
                            controllers=all_controllers,
                            current_user=current_user,
                            visitor_ip=visitor_ip)
@@ -80,7 +71,6 @@ def set_manual_temp():
         return "Access Denied", 403
 
     conn = get_db_connection()
-    # Logic: Set priority to 2, set_by to current user's MAC
     conn.execute('''
         UPDATE controllers 
         SET target_temp = ?, set_by = ?, priority = 2 
@@ -102,7 +92,6 @@ def set_preference():
         return "Access Denied", 403
 
     conn = get_db_connection()
-    # Logic: Insert or Replace preference for this user/controller combo
     conn.execute('''
         INSERT OR REPLACE INTO preferences (temp, fk_user_mac, fk_controller_id)
         VALUES (?, ?, ?)
@@ -136,8 +125,6 @@ def delete_controller():
     visitor_ip = request.remote_addr
     controller_id = request.form.get('controller_id')
 
-    # Optional: You might want to restrict this to admins only, 
-    # but for now we just check if they are a valid user.
     user_record = get_user_by_ip(visitor_ip)
     if not user_record:
         return "Access Denied", 403
