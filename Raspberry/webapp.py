@@ -1,88 +1,35 @@
-#!/usr/bin/env python3
-
-from flask import Flask, jsonify, request, render_template
+from flask import Flask, render_template, request, redirect, url_for
 import sqlite3
-import logging
 import os
 
 app = Flask(__name__)
 DB_PATH = "/var/lib/iot/iot.db"
-#DB_PATH = "iot.db" # relative path for testing
 
-def get_db():
+def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
+    conn.row_factory = sqlite3.Row  # Access columns by name
     return conn
-
-# --- SERVE HTML ---
 
 @app.route('/')
 def index():
-    # Flask automatically looks for "index.html" inside the "templates" folder
-    return render_template('index.html')
+    conn = get_db_connection()
+    # Fetch all devices, prioritizing those currently online
+    devices = conn.execute('SELECT * FROM devices ORDER BY online DESC, hostname ASC').fetchall()
+    conn.close()
+    return render_template('index.html', devices=devices)
 
-# --- API ENDPOINTS ---
-
-@app.route('/api/controllers', methods=['GET'])
-def get_controllers():
-    """Returns list of all HVAC controllers."""
-    try:
-        with get_db() as conn:
-            rows = conn.execute("SELECT * FROM controllers ORDER BY name").fetchall()
-            return jsonify([dict(row) for row in rows])
-    except Exception as e:
-        return jsonify([])
-
-@app.route('/api/controllers/<int:controller_id>/target', methods=['POST'])
-def set_target_temp(controller_id):
-    """Sets the target temperature for a specific controller."""
-    data = request.json
-    target = data.get('target')
+@app.route('/update_username', methods=['POST'])
+def update_username():
+    mac = request.form['mac']
+    new_username = request.form['username']
     
-    if target is None:
-        return jsonify({"error": "Missing target temperature"}), 400
-        
-    try:
-        with get_db() as conn:
-            conn.execute(
-                "UPDATE controllers SET target_temp = ? WHERE controller_id = ?",
-                (target, controller_id)
-            )
-            conn.commit()
-        return jsonify({"status": "success", "target": target})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/api/devices', methods=['GET'])
-def get_devices():
-    """Returns all detected network devices."""
-    try:
-        with get_db() as conn:
-            rows = conn.execute("SELECT * FROM devices ORDER BY online DESC, last_seen DESC").fetchall()
-            devices = []
-            for row in rows:
-                d = dict(row)
-                # Helper for JS to select IDs easily (removes colons from MAC)
-                d['mac_safe'] = d['mac'].replace(':', '') 
-                devices.append(d)
-            return jsonify(devices)
-    except Exception as e:
-        return jsonify([])
-
-@app.route('/api/devices/<path:mac>/name', methods=['POST'])
-def set_device_name(mac):
-    """Associates a Username with a MAC address."""
-    data = request.json
-    username = data.get('username')
+    conn = get_db_connection()
+    conn.execute('UPDATE devices SET username = ? WHERE mac = ?', (new_username, mac))
+    conn.commit()
+    conn.close()
     
-    with get_db() as conn:
-        conn.execute(
-            "UPDATE devices SET username = ? WHERE mac = ?",
-            (username, mac)
-        )
-        conn.commit()
-    return jsonify({"status": "updated", "mac": mac, "username": username})
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
-    # Running on 0.0.0.0 allows access from other devices on the LAN
+    # Ensure the app has permissions to read/write the DB file
     app.run(host='0.0.0.0', port=5000, debug=True)

@@ -2,139 +2,48 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IoT Climate Control</title>
+    <title>IoT Device Manager</title>
     <style>
-        body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; background-color: #f9f9f9; }
-        h1, h2 { color: #333; }
-        
-        /* Card Styling */
-        .card { 
-            background: white; 
-            border: 1px solid #ddd; 
-            padding: 1.5rem; 
-            margin-bottom: 1rem; 
-            border-radius: 8px; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-        
-        /* Status Indicators */
-        .online { color: #28a745; font-weight: bold; font-size: 1.2rem; }
-        .offline { color: #6c757d; font-size: 1.2rem; }
-        
-        /* Inputs and Buttons */
-        input[type="number"] { width: 70px; padding: 8px; margin-right: 5px; border: 1px solid #ccc; border-radius: 4px;}
-        input[type="text"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-        button { 
-            cursor: pointer; 
-            padding: 8px 15px; 
-            background: #007bff; 
-            color: white; 
-            border: none; 
-            border-radius: 4px; 
-            transition: background 0.2s;
-        }
-        button:hover { background: #0056b3; }
-        
-        .meta { color: #666; font-size: 0.9em; margin-top: 5px; display: block;}
+        body { font-family: sans-serif; margin: 40px; background: #f4f4f9; }
+        table { width: 100%; border-collapse: collapse; background: white; }
+        th, td { padding: 12px; border: 1px solid #ddd; text-align: left; }
+        th { background-color: #007bff; color: white; }
+        .status-on { color: green; font-weight: bold; }
+        .status-off { color: gray; }
+        .save-btn { background: #28a745; color: white; border: none; padding: 5px 10px; cursor: pointer; }
     </style>
 </head>
 <body>
-    <h1>Climate Dashboard</h1>
-    
-    <h2>Controllers</h2>
-    <div id="controllers">
-        <p>Loading controllers...</p>
-    </div>
-
-    <h2>Connected Devices (Users)</h2>
-    <div id="devices">
-        <p>Scanning network...</p>
-    </div>
-
-    <script>
-        // Use the Fetch API to get data from the Python backend
-        async function loadData() {
-            try {
-                const [ctrlRes, devRes] = await Promise.all([
-                    fetch('/api/controllers'), 
-                    fetch('/api/devices')
-                ]);
-
-                if (!ctrlRes.ok || !devRes.ok) throw new Error("API Error");
-
-                const controllers = await ctrlRes.json();
-                const devices = await devRes.json();
-
-                renderControllers(controllers);
-                renderDevices(devices);
-            } catch (err) {
-                console.error("Failed to load data", err);
-            }
-        }
-
-        function renderControllers(data) {
-            const container = document.getElementById('controllers');
-            if (data.length === 0) {
-                container.innerHTML = "<p>No controllers found. Waiting for MQTT data...</p>";
-                return;
-            }
-
-            container.innerHTML = data.map(c => `
-                <div class="card">
-                    <h3>${c.name} <small>(ID: ${c.controller_id})</small></h3>
-                    <p>
-                        Current Temp: <strong>${c.curr_temp !== null ? c.curr_temp + '°C' : '--'}</strong> 
-                    </p>
-                    <p>
-                        Target: 
-                        <input type="number" id="temp-${c.controller_id}" value="${c.target_temp || 20}">
-                        <button onclick="setTemp('${c.controller_id}')">Set</button>
-                    </p>
-                    <span class="meta">Last update: ${c.last_seen || 'Never'}</span>
-                </div>
-            `).join('');
-        }
-
-        function renderDevices(data) {
-            const container = document.getElementById('devices');
-            container.innerHTML = data.map(d => `
-                <div class="card">
-                    <span class="${d.online ? 'online' : 'offline'}">●</span>
-                    <strong>${d.username || 'Unknown User'}</strong>
-                    <div class="meta">MAC: ${d.mac} | Host: ${d.hostname || 'N/A'}</div>
-                    <div style="margin-top: 10px;">
-                        <input type="text" placeholder="Assign Name" id="user-${d.mac_safe}" value="${d.username || ''}">
-                        <button onclick="setUser('${d.mac}', '${d.mac_safe}')">Save</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        async function setTemp(id) {
-            const val = document.getElementById(`temp-${id}`).value;
-            await fetch(`/api/controllers/${id}/target`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({target: val})
-            });
-            loadData(); // Refresh immediately
-        }
-
-        async function setUser(mac, macSafe) {
-            const val = document.getElementById(`user-${macSafe}`).value;
-            await fetch(`/api/devices/${mac}/name`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({username: val})
-            });
-            loadData(); // Refresh immediately
-        }
-
-        // Initial Load
-        loadData();
-        // Refresh data every 5 seconds
-        setInterval(loadData, 5000); 
-    </script>
+    <h2>Connected IoT Devices</h2>
+    <table>
+        <thead>
+            <tr>
+                | Status | Hostname | IP Address | MAC Address | Friendly Username | Action |
+            </tr>
+        </thead>
+        <tbody>
+            {% for device in devices %}
+            <tr>
+                <td>
+                    <span class="{{ 'status-on' if device['online'] else 'status-off' }}">
+                        {{ "● Online" if device['online'] else "○ Offline" }}
+                    </span>
+                </td>
+                <td>{{ device['hostname'] }}</td>
+                <td>{{ device['ip'] }}</td>
+                <td><code>{{ device['mac'] }}</code></td>
+                <form action="/update_username" method="POST">
+                    <td>
+                        <input type="hidden" name="mac" value="{{ device['mac'] }}">
+                        <input type="text" name="username" value="{{ device['username'] or '' }}" placeholder="Enter name...">
+                    </td>
+                    <td>
+                        <button type="submit" class="save-btn">Update</button>
+                    </td>
+                </form>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </body>
 </html>
