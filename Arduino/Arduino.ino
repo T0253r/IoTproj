@@ -62,7 +62,10 @@ void maintainConnections() {
       lastConnAttempt = millis();
       if (client.connect(CONTROLLER_ID)) {
         Serial.println("Connected to mqtt broker");
-        client.subscribe("controllers/" CONTROLLER_ID "/target-temp");
+        client.subscribe(topic_target_temp);
+      } else {
+          Serial.print("Failed, rc=");
+          Serial.println(client.state());
       }
     }
   } else {

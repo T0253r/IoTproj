@@ -74,7 +74,7 @@ def on_message(client, userdata, msg):
             with conn:
                 conn.execute("""
                     UPDATE controllers
-                    SET current_temp = ?, last_seen = CURRENT_TIMESTAMP 
+                    SET curr_temp = ?, last_seen = CURRENT_TIMESTAMP 
                     WHERE controller_id = ?
                 """, (current_temp, controller_id))
         finally:
