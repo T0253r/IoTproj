@@ -10,8 +10,8 @@ from scapy.all import ARP, Ether, srp
 LEASE_FILE = "/var/lib/misc/dnsmasq.leases"
 DB_PATH = "/var/lib/iot/iot.db"
 INTERFACE = "wlan0"
-OFFLINE_THRESHOLD = 3
-SCAN_INTERVAL = 10
+OFFLINE_THRESHOLD = 2
+SCAN_INTERVAL = 5
 
 logging.basicConfig(
     level=logging.INFO,
