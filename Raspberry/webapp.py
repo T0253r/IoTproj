@@ -1,9 +1,45 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 import sqlite3
+from flasgger import Swagger, swag_from
 
 app = Flask(__name__)
 app.secret_key = "iot_secret_key"
 DB_PATH = "/var/lib/iot/iot.db"
+
+# swagger configuration
+swagger_config = {
+    "headers": [],
+    "specs": [
+        {
+            "endpoint": 'apispec',
+            "route": '/apispec.json',
+            "rule_filter": lambda rule: True,
+            "model_filter": lambda tag: True,
+        }
+    ],
+    "static_url_path": "/flasgger_static",
+    "swagger_ui": True,
+    "specs_route": "/api/docs"
+}
+
+swagger_template = {
+    "swagger": "2.0",
+    "info": {
+        "title": "IoT Home Heating Controller API",
+        "description": "API for managing IoT heating controllers and user preferences",
+        "version": "1.0.0",
+        "contact": {
+            "name": "IoT Project",
+        }
+    },
+    "host": "localhost:5000",
+    "basePath": "/",
+    "schemes": ["http"],
+}
+
+swagger = Swagger(app, config=swagger_config, template=swagger_template)
+
+
 
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
@@ -18,6 +54,24 @@ def get_user_by_ip(ip):
 
 @app.route('/')
 def index():
+    """
+    Home page
+    ---
+    tags:
+      - Web Interface
+    parameters:
+      - name: X-Forwarded-For
+        in: header
+        type: string
+        required: false
+        description: Client IP address
+    responses:
+      200:
+        description: Renders the main dashboard page
+        schema:
+          type: string
+          example: HTML page with controllers list
+    """
     visitor_ip = request.remote_addr
     current_user = get_user_by_ip(visitor_ip)
     user_mac = current_user['mac'] if current_user else None
@@ -47,6 +101,26 @@ def index():
 
 @app.route('/update_username', methods=['POST'])
 def update_username():
+    """
+    Update username for the current device
+    ---
+    tags:
+      - User Management
+    parameters:
+      - name: username
+        in: formData
+        type: string
+        required: true
+        description: New username for the device
+    responses:
+      302:
+        description: Redirects to home page after successful update
+      403:
+        description: Access denied - IP not recognized
+        schema:
+          type: string
+          example: "Access Denied: Your IP is not recognized."
+    """
     visitor_ip = request.remote_addr
     new_name = request.form.get('username')
     user_record = get_user_by_ip(visitor_ip)
@@ -62,6 +136,31 @@ def update_username():
 
 @app.route('/set_manual_temp', methods=['POST'])
 def set_manual_temp():
+    """
+    Set manual temperature override for a controller
+    ---
+    tags:
+      - Temperature Control
+    parameters:
+      - name: controller_id
+        in: formData
+        type: integer
+        required: true
+        description: ID of the controller to update
+      - name: target_temp
+        in: formData
+        type: number
+        required: true
+        description: Target temperature to set
+    responses:
+      302:
+        description: Redirects to home page after setting temperature
+      403:
+        description: Access denied - user not authenticated
+        schema:
+          type: string
+          example: "Access Denied"
+    """
     visitor_ip = request.remote_addr
     controller_id = request.form.get('controller_id')
     target_temp = request.form.get('target_temp')
