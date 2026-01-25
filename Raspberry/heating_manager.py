@@ -41,6 +41,7 @@ def load_known_controllers():
         conn.close()
 
 def register_new_controller(controller_id):
+    logging.info("Attempting to register new controller")
     conn = get_db_connection()
     try:
         with conn:
@@ -129,8 +130,6 @@ def process_presence_logic():
 def sync_loop(client):
     while True:
         try:
-            logging.info("Sync_loop cycle started")
-
             process_presence_logic()
 
             conn = get_db_connection()
