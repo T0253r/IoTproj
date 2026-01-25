@@ -62,6 +62,8 @@ def on_message(client, userdata, msg):
 
         controller_id = topic.split('/')[1]
         current_temp = float(payload)
+
+        logging.info(f"Received message (id/current): {controller_id}/{current_temp}")
         
         if controller_id not in known_controllers:
             register_new_controller(controller_id)
@@ -127,6 +129,7 @@ def process_presence_logic():
 def sync_loop(client):
     while True:
         try:
+            logging.info("Sync_loop cycle started")
 
             process_presence_logic()
 
@@ -140,6 +143,7 @@ def sync_loop(client):
                     target = controller['target_temp']
                     if c_id and target is not None:
                         client.publish(f"controllers/{c_id}/target-temp", str(int(target)))
+                        logging.info(f"Published message (id/target): {c_id}/{str(int(target))}")
             finally:
                 conn.close()
             
