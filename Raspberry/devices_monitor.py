@@ -3,14 +3,15 @@
 import time
 import sqlite3
 import logging
-from datetime import datetime
-from scapy.all import ARP, Ether, srp
 import os
 import sys
+from scapy.all import ARP, Ether, srp
 
 LEASE_FILE = "/var/lib/misc/dnsmasq.leases"
 DB_PATH = "/var/lib/iot/iot.db"
 INTERFACE = "wlan0"
+OFFLINE_THRESHOLD = 3
+SCAN_INTERVAL = 10
 
 logging.basicConfig(
     level=logging.INFO,
@@ -27,81 +28,120 @@ def get_db_connection():
     conn.execute("PRAGMA journal_mode=WAL;") 
     return conn
 
-def get_dhcp_devices():
-    devices = {}
+def sync_dhcp_to_db():
     try:
-        with open(LEASE_FILE, "r") as f:
-            for line in f:
-                parts = line.split()
-                if len(parts) >= 4:
-                    devices[parts[2]] = {"mac": parts[1], "name": parts[3]}
-    except FileNotFoundError:
-        logging.error(f"DHCP Lease file not found at {LEASE_FILE}")
+        leases = []
+        if os.path.exists(LEASE_FILE):
+            with open(LEASE_FILE, "r") as f:
+                for line in f:
+                    parts = line.split()
+                    if len(parts) >= 4:
+                        leases.append((parts[1], parts[2], parts[3]))
+        
+        if not leases:
+            return
+
+        conn = get_db_connection()
+        try:
+            with conn:
+                cursor = conn.cursor()
+                cursor.executemany('''
+                    INSERT INTO devices (mac, ip, hostname) VALUES (?, ?, ?)
+                    ON CONFLICT(mac) DO UPDATE SET
+                    ip=excluded.ip,
+                    hostname=excluded.hostname
+                ''', leases)
+        finally:
+            conn.close()
+    except Exception as e:
+        logging.error(f"Error syncing DHCP: {e}")
+
+def get_monitored_devices():
+    devices = {}
+    conn = get_db_connection()
+    try:
+        with conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT mac, ip, hostname, online FROM devices")
+            for row in cursor.fetchall():
+                devices[row['mac']] = {
+                    'ip': row['ip'],
+                    'hostname': row['hostname'],
+                    'db_online': bool(row['online'])
+                }
+    except Exception as e:
+        logging.error(f"Error reading DB: {e}")
+    finally:
+        conn.close()
     return devices
 
-def verify_active(ip_list):
+def scan_network(ip_list):
     if not ip_list:
-        return []
-
+        return set()
     try:
         ans, _ = srp(Ether(dst="ff:ff:ff:ff:ff:ff")/ARP(pdst=ip_list), 
                      timeout=2, verbose=False, iface=INTERFACE)
-        
-        return [received.psrc for sent, received in ans]
+        return {received.psrc for sent, received in ans}
     except Exception as e:
-        logging.error(f"Scan failed: {e}")
-        return []
+        logging.error(f"Scanner failed: {e}")
+        return set()
 
-def update_database(dhcp_data, active_ips):
+def update_db_status(status_updates):
+    if not status_updates:
+        return
+    conn = get_db_connection()
     try:
-        with get_db_connection() as conn:
-            cursor = conn.cursor()
-            
-            active_macs = []
-
-            for ip in active_ips:
-                device_info = dhcp_data.get(ip)
-                if device_info:
-                    mac = device_info['mac']
-                    name = device_info['name']
-                    active_macs.append(mac)
-                    
-                    logging.info(f"Device Online: {name} ({ip})")
-                    
-                    cursor.execute('''INSERT INTO devices (mac, ip, hostname, online)
-                                VALUES (?, ?, ?, 1)
-                                ON CONFLICT(mac) DO UPDATE SET
-                                ip=excluded.ip, 
-                                hostname=excluded.hostname,
-                                online=1''', (mac, ip, name))
-
-            if active_macs:
-                placeholders = ','.join(['?'] * len(active_macs))
-                query = f"UPDATE devices SET online = 0 WHERE mac NOT IN ({placeholders})"
-                cursor.execute(query, active_macs)
-            else:
-                cursor.execute("UPDATE devices SET online = 0")
-
+        with conn:
+            conn.executemany("UPDATE devices SET online = ? WHERE mac = ?", status_updates)
     except Exception as e:
-        logging.error(f"Database update failed: {e}")
-
+        logging.error(f"Error updating DB status: {e}")
+    finally:
+        conn.close()
 
 def main():
-    logging.info("Starting Connected Device Monitor Service...")
+    logging.info("Starting Device Monitor Service...")
     
-    while True:
-        try:
-            logging.info("Checking for connected devices")
-            dhcp_data = get_dhcp_devices()
-            if dhcp_data:
-                active_ips = verify_active(list(dhcp_data.keys()))
-                update_database(dhcp_data, active_ips)
+    missed_scans_counter = {}
 
-        except Exception as e:
-            logging.error(f"Critical Monitor Loop Error: {e}")
+    while True:
+        sync_dhcp_to_db()
+        monitored_devices = get_monitored_devices()
         
-        time.sleep(20)
+        target_ips = [d['ip'] for d in monitored_devices.values() if d['ip']]
+        active_ips = scan_network(target_ips)
+
+        db_updates = []
         
+        for mac, info in monitored_devices.items():
+            ip = info['ip']
+            hostname = info['hostname']
+            currently_online_in_db = info['db_online']
+
+            if mac not in missed_scans_counter:
+                missed_scans_counter[mac] = 0 if currently_online_in_db else OFFLINE_THRESHOLD
+
+            if ip in active_ips:
+                if missed_scans_counter[mac] > 0:
+                    logging.info(f"Device Reconnected: {hostname} ({ip})")
+                
+                missed_scans_counter[mac] = 0
+                
+                if not currently_online_in_db:
+                    db_updates.append((1, mac))
+
+            else:
+                if missed_scans_counter[mac] < OFFLINE_THRESHOLD:
+                    missed_scans_counter[mac] += 1
+                    logging.debug(f"{hostname} missed scan {missed_scans_counter[mac]}/{OFFLINE_THRESHOLD}")
+                
+                if missed_scans_counter[mac] >= OFFLINE_THRESHOLD:
+                    if currently_online_in_db:
+                        logging.info(f"Device Offline: {hostname} ({ip})")
+                        db_updates.append((0, mac))
+
+        update_db_status(db_updates)
+
+        time.sleep(SCAN_INTERVAL)
 
 if __name__ == "__main__":
     main()
