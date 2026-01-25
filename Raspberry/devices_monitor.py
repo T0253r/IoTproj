@@ -8,7 +8,7 @@ import sys
 from scapy.all import ARP, Ether, srp
 
 LEASE_FILE = "/var/lib/misc/dnsmasq.leases"
-DB_PATH = "/var/lib/iot/iot.db"
+DB_PATH = "/opt/iot/db/iot.db"
 INTERFACE = "wlan0"
 OFFLINE_THRESHOLD = 2
 SCAN_INTERVAL = 5

@@ -7,7 +7,7 @@ import logging
 import sys
 import os
 
-DB_PATH = "/var/lib/iot/iot.db"
+DB_PATH = "/opt/iot/db/iot.db"
 BROKER = "127.0.0.1"
 PORT = 1883
 MIN_TEMP = 10
@@ -136,6 +136,7 @@ def sync_loop(client):
             try:
                 with conn:
                     controllers = conn.execute("SELECT controller_id, target_temp FROM controllers").fetchall()
+                    logging.info(f"Found {len(controllers)} controllers in db to sync")
                 
                 for controller in controllers:
                     c_id = controller['controller_id']
