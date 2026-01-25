@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>IoT Device Manager</title>
+    <style>
+        body { font-family: sans-serif; margin: 40px; background: #f4f4f9; }
+        h2 { border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-top: 40px;}
+        table { width: 100%; border-collapse: collapse; background: white; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        th, td { padding: 12px; border: 1px solid #ddd; text-align: left; vertical-align: middle; }
+        th { background-color: #007bff; color: white; }
+        
+        /* Status Colors */
+        .status-on { color: green; font-weight: bold; }
+        .status-off { color: gray; }
+
+        /* Button Styles */
+        button { border: none; padding: 6px 12px; cursor: pointer; border-radius: 4px; font-size: 0.9em; }
+        .save-btn { background: #28a745; color: white; }
+        .manual-btn { background: #17a2b8; color: white; }
+        .clear-btn { background: #6c757d; color: white; margin-left: 5px; }
+        .delete-btn { background: #dc3545; color: white; font-size: 0.8em; }
+
+        /* Inputs */
+        input[type="text"], input[type="number"] { padding: 5px; border: 1px solid #ccc; border-radius: 3px; width: 80px; }
+        
+        /* Helpers */
+        .info-small { font-size: 0.85em; color: #666; display: block; margin-top: 4px;}
+        .flex-row { display: flex; align-items: center; }
+    </style>
+</head>
+<body>
+
+    <h2>My Connection</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Status</th>
+                <th>Hostname</th>
+                <th>IP Address</th>
+                <th>MAC Address</th>
+                <th>My Username</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if current_user %}
+            <tr>
+                <td>
+                    <span class="status-on">● Online</span>
+                </td>
+                <td>{{ current_user['hostname'] }}</td>
+                <td>{{ current_user['ip'] }}</td>
+                <td><code>{{ current_user['mac'] }}</code></td>
+                <form action="/update_username" method="POST">
+                    <td>
+                        <input type="text" name="username" value="{{ current_user['username'] or '' }}" placeholder="Enter name..." style="width: 150px;">
+                    </td>
+                    <td>
+                        <button type="submit" class="save-btn">Update Name</button>
+                    </td>
+                </form>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" style="text-align:center; color:red; font-weight:bold;">
+                    You are accessing this from an unrecognized IP address ({{ visitor_ip }}).
+                </td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+
+    <h2>Heating Controllers</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Controller</th>
+                <th>Live Data</th>
+                <th>Manual Override (Priority 2)</th>
+                <th>My Preference (Priority 1)</th>
+                <th>Admin</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in controllers %}
+            <tr>
+                <td>
+                    <strong>{{ c['name'] }}</strong><br>
+                    <span class="info-small">ID: {{ c['controller_id'] }}</span>
+                </td>
+                
+                <td>
+                    Current: <strong>{{ c['curr_temp'] }}°C</strong><br>
+                    Target: <strong>{{ c['target_temp'] }}°C</strong><br>
+                    <span class="info-small" title="Last time MQTT data was received">
+                        Seen: {{ c['last_seen'] or 'Never' }}
+                    </span>
+                    <span class="info-small">
+                        {% if c['priority'] == 2 %}
+                            <span style="color:red;">Locked by: {{ c['locked_by_name'] or 'Unknown' }}</span>
+                        {% elif c['priority'] == 1 %}
+                            <span style="color:green;">Auto: Voting Logic</span>
+                        {% else %}
+                            System Default
+                        {% endif %}
+                    </span>
+                </td>
+
+                <td>
+                    <form action="/set_manual_temp" method="POST">
+                        <input type="hidden" name="controller_id" value="{{ c['controller_id'] }}">
+                        <div class="flex-row">
+                            <input type="number" step="0.5" name="target_temp" value="{{ c['target_temp'] }}" {{ 'disabled' if not current_user }}>
+                            <button type="submit" class="manual-btn" style="margin-left:5px;" {{ 'disabled' if not current_user }}>Set</button>
+                        </div>
+                    </form>
+                    <span class="info-small">Locks temp (High Priority)</span>
+                </td>
+
+                <td>
+                    <div class="flex-row">
+                        <form action="/set_preference" method="POST" style="margin-right: 5px;">
+                            <input type="hidden" name="controller_id" value="{{ c['controller_id'] }}">
+                            <div class="flex-row">
+                                <input type="number" step="0.5" name="pref_temp" value="{{ c['user_pref_temp'] or '' }}" placeholder="--" {{ 'disabled' if not current_user }}>
+                                <button type="submit" class="save-btn" style="margin-left:5px;" {{ 'disabled' if not current_user }}>Save</button>
+                            </div>
+                        </form>
+
+                        <form action="/clear_preference" method="POST">
+                            <input type="hidden" name="controller_id" value="{{ c['controller_id'] }}">
+                            <button type="submit" class="clear-btn" title="Remove my preference" {{ 'disabled' if not current_user }}>Clear</button>
+                        </form>
+                    </div>
+                    <span class="info-small">Votes on temp (Standard Priority)</span>
+                </td>
+
+                <td style="text-align: center;">
+                    <form action="/delete_controller" method="POST" onsubmit="return confirm('Are you sure you want to delete {{ c.name }}?')">
+                        <input type="hidden" name="controller_id" value="{{ c['controller_id'] }}">
+                        <button type="submit" class="delete-btn" {{ 'disabled' if not current_user }}>Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</body>
+</html>
