@@ -27,8 +27,9 @@ def get_db_connection():
 
 
 def load_known_controllers():
+    conn = get_db_connection()
     try:
-        with get_db_connection() as conn:
+        with conn:
             rows = conn.execute("SELECT controller_id FROM controllers").fetchall()
             for row in rows:
                 if row['controller_id']:
@@ -36,10 +37,13 @@ def load_known_controllers():
         logging.info(f"Loaded known controllers: {known_controllers}")
     except Exception as e:
         logging.error(f"Error loading controllers: {e}")
+    finally:
+        conn.close()
 
 def register_new_controller(controller_id):
+    conn = get_db_connection()
     try:
-        with get_db_connection() as conn:
+        with conn:
             conn.execute( 
                 "INSERT OR IGNORE INTO controllers (controller_id, name) VALUES (?, ?)",
                 (controller_id, controller_id)
@@ -48,6 +52,8 @@ def register_new_controller(controller_id):
             known_controllers.add(controller_id)
     except Exception as e:
         logging.error(f"Controller registration error: {e}")
+    finally:
+        conn.close()
 
 def on_message(client, userdata, msg):
     try:
@@ -60,19 +66,24 @@ def on_message(client, userdata, msg):
         if controller_id not in known_controllers:
             register_new_controller(controller_id)
 
-        with get_db_connection() as conn:
-            conn.execute("""
-                UPDATE controllers
-                SET current_temp = ?, last_seen = CURRENT_TIMESTAMP 
-                WHERE controller_id = ?
-            """, (current_temp, controller_id))
+        conn = get_db_connection()
+        try:
+            with conn:
+                conn.execute("""
+                    UPDATE controllers
+                    SET current_temp = ?, last_seen = CURRENT_TIMESTAMP 
+                    WHERE controller_id = ?
+                """, (current_temp, controller_id))
+        finally:
+            conn.close()
                 
     except Exception as e:
         logging.error(f"on_message error: {e}")
 
 def process_presence_logic():
+    conn = get_db_connection()
     try:
-        with get_db_connection() as conn:
+        with conn:
 
             # clear set temperatures from users no longer online
             conn.execute('''
@@ -109,6 +120,8 @@ def process_presence_logic():
 
     except Exception as e:
         print(f"Error: {e}")
+    finally:
+        conn.close()
 
 
 def sync_loop(client):
@@ -117,14 +130,18 @@ def sync_loop(client):
 
             process_presence_logic()
 
-            with get_db_connection() as conn:
-                controllers = conn.execute("SELECT controller_id, target_temp FROM controllers").fetchall()
-            
-            for controller in controllers:
-                c_id = controller['controller_id']
-                target = controller['target_temp']
-                if c_id and target is not None:
-                    client.publish(f"controllers/{c_id}/target-temp", str(int(target)))
+            conn = get_db_connection()
+            try:
+                with conn:
+                    controllers = conn.execute("SELECT controller_id, target_temp FROM controllers").fetchall()
+                
+                for controller in controllers:
+                    c_id = controller['controller_id']
+                    target = controller['target_temp']
+                    if c_id and target is not None:
+                        client.publish(f"controllers/{c_id}/target-temp", str(int(target)))
+            finally:
+                conn.close()
             
         except Exception as e:
             logging.error(f"Sync error: {e}")
