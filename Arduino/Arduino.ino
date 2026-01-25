@@ -2,7 +2,7 @@
 #include <PubSubClient.h>
 #include <EduIntro.h>
 
-#define DHT11_PIN A0
+#define DHT11_PIN 5
 #define LED_PIN 3
 #define CONTROLLER_ID "1" //unikalne ID przypiasane urzadzeniu, nadrukowane na obudowie
 
