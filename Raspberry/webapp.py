@@ -75,6 +75,7 @@ def index():
     visitor_ip = request.remote_addr
     current_user = get_user_by_ip(visitor_ip)
     user_mac = current_user['mac'] if current_user else None
+    user_username = current_user['username'] if current_user else None
 
     conn = get_db_connection()
     
@@ -96,8 +97,26 @@ def index():
     
     return render_template('index.html', 
                            controllers=all_controllers,
+                           user_username=user_username)
+
+@app.route('/settings')
+def settings():
+    visitor_ip = request.remote_addr
+    current_user = get_user_by_ip(visitor_ip)
+
+    conn = get_db_connection()
+    
+    controllers_query = '''
+        SELECT controller_id, name
+        FROM controllers
+    '''
+    all_controllers = conn.execute(controllers_query).fetchall()
+    
+    conn.close()
+    
+    return render_template('settings.html',
                            current_user=current_user,
-                           visitor_ip=visitor_ip)
+                           controllers=all_controllers)
 
 @app.route('/update_username', methods=['POST'])
 def update_username():
@@ -105,7 +124,7 @@ def update_username():
     Update username for the current device
     ---
     tags:
-      - User Management
+      - Management
     parameters:
       - name: username
         in: formData
@@ -182,6 +201,31 @@ def set_manual_temp():
 
 @app.route('/set_preference', methods=['POST'])
 def set_preference():
+    """
+    Set temperature preference for a controller
+    ---
+    tags:
+      - Temperature Control
+    parameters:
+      - name: controller_id
+        in: formData
+        type: integer
+        required: true
+        description: ID of the controller to set preference for
+      - name: pref_temp
+        in: formData
+        type: number
+        required: true
+        description: Preferred temperature to set
+    responses:
+      302:
+        description: Redirects to home page after setting preference
+      403:
+        description: Access denied - user not authenticated
+        schema:
+          type: string
+          example: "Access Denied"
+    """
     visitor_ip = request.remote_addr
     controller_id = request.form.get('controller_id')
     pref_temp = request.form.get('pref_temp')
@@ -202,6 +246,26 @@ def set_preference():
 
 @app.route('/clear_preference', methods=['POST'])
 def clear_preference():
+    """
+    Clear temperature preference for a controller
+    ---
+    tags:
+      - Temperature Control
+    parameters:
+      - name: controller_id
+        in: formData
+        type: integer
+        required: true
+        description: ID of the controller to clear preference for
+    responses:
+      302:
+        description: Redirects to home page after clearing preference
+      403:
+        description: Access denied - user not authenticated
+        schema:
+          type: string
+          example: "Access denied"
+    """
     visitor_ip = request.remote_addr
     controller_id = request.form.get('controller_id')
 
@@ -221,6 +285,26 @@ def clear_preference():
 
 @app.route('/delete_controller', methods=['POST'])
 def delete_controller():
+    """
+    Delete a controller from the system
+    ---
+    tags:
+      - Management
+    parameters:
+      - name: controller_id
+        in: formData
+        type: integer
+        required: true
+        description: ID of the controller to delete
+    responses:
+      302:
+        description: Redirects to home page after deletion
+      403:
+        description: Access denied - user not authenticated
+        schema:
+          type: string
+          example: "Access Denied"
+    """
     visitor_ip = request.remote_addr
     controller_id = request.form.get('controller_id')
 
@@ -231,6 +315,58 @@ def delete_controller():
     conn = get_db_connection()
     conn.execute('DELETE FROM controllers WHERE controller_id = ?', (controller_id,))
     conn.commit()
+    conn.close()
+    return redirect(url_for('index'))
+
+@app.route('/update_controller_name', methods=['POST'])
+def update_controller_name():
+    """
+    Update the name of a controller
+    ---
+    tags:
+      - Management
+    parameters:
+      - name: controller_id
+        in: formData
+        type: integer
+        required: true
+        description: ID of the controller to rename
+      - name: name
+        in: formData
+        type: string
+        required: true
+        description: New name for the controller
+    responses:
+      302:
+        description: Redirects to home page after updating name
+      403:
+        description: Access denied - user not authenticated
+        schema:
+          type: string
+          example: "Access Denied"
+      404:
+        description: Controller not found
+        schema:
+          type: string
+          example: "Controller not found"
+    """
+    visitor_ip = request.remote_addr
+    controller_id = request.form.get('controller_id')
+    new_name = request.form.get('name')
+
+    user_record = get_user_by_ip(visitor_ip)
+    if not user_record:
+        return "Access Denied", 403
+
+    conn = get_db_connection()
+    result = conn.execute('UPDATE controllers SET name = ? WHERE controller_id = ?', 
+                          (new_name, controller_id))
+    conn.commit()
+    
+    if result.rowcount == 0:
+        conn.close()
+        return "Controller not found", 404
+    
     conn.close()
     return redirect(url_for('index'))
 
