@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pl">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Sterowanie Ogrzewaniem</title>
+        <link rel="stylesheet" href="{{ url_for(endpoint=".static",
+        filename='style.css') }}">
+    </head>
+    <body>
+        <nav>
+            <p class="app-title">SIG</p>
+            <p>Witaj {{ user_name }}</p>
+            <a href="/profile" class="btn">Mój Profil i Preferencje</a>
+        </nav>
+
+        {% with messages = get_flashed_messages() %} {% if messages %}
+        <div
+            style="
+                background: #d4edda;
+                color: #155724;
+                padding: 10px;
+                margin-bottom: 15px;
+            "
+        >
+            {{ messages[0] }}
+        </div>
+        {% endif %} {% endwith %}
+
+        <h2>Pokoje</h2>
+        <div class="room-row">
+            {% for room in rooms %}
+            <div
+                class="room-card"
+                onclick="selectRoom('{{ room.id }}')"
+                style="cursor: pointer"
+            >
+                <!-- Nazwa -->
+                <div style="flex: 2; font-weight: bold">{{ room.name }}</div>
+                <!-- Obecnie -->
+                <div style="flex: 1">Obecna: {{ room.current_temp }}°C</div>
+                <!-- Zadana -->
+                <div style="flex: 1; color: #007bff">
+                    Zadana: {{ room.target_temp }}°C
+                </div>
+                <!-- Ostatnia zmiana -->
+                <div style="flex: 2">
+                    Ostatnia zmiana: {{ room.last_change_reason }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="room-grid">
+            {% for room in rooms %}
+            <div class="room-details" id="room-{{ room.id }}" style="display: none">
+                <h2>{{ room.name }}</h2>
+
+                <div>
+                    <div>
+                        <div>Aktualna temperatura</div>
+                        <div>{{ room.current_temp }}°C</div>
+                    </div>
+                    <div>
+                        <div>Zadana temperatura</div>
+                        <div>
+                            {{ room.target_temp }}°C
+                            <button type="button">+</button>
+                            <button type="button">-</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    Status: {{ room.status }}{% if room.status == 'Online' %} (Włączone / Temperatura osiągnięta / Granie wyłączone){% endif %}
+                </div>
+                <div>
+                    Ostatnia zmiana: {{ room.last_change_reason }}
+                </div>
+
+                <h3>Twoje ustawienia AutoTemp™</h3>
+                <div>Automatyczna temperatura komfortowa po wyryciu obecności</div>
+                <div>
+                    <div>Używaj AutoTemp™ w tym pokoju:</div>
+                    <input type="checkbox" />
+                </div>
+                <div>
+                    <div>Temperatura komfortowa</div>
+                    <div>
+                        {{ room.comfort_temp }}°C
+                        <button type="button">+</button>
+                        <button type="button">-</button>
+                    </div>
+                </div>
+
+                <div style="margin-top: 10px; text-align: right">
+                    <a
+                        href="/room/delete/{{ room.id }}"
+                        class="status-info"
+                        onclick="return confirm('Usunąć pokój?')"
+                        >Usuń pokój</a
+                    >
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <script src="{{ url_for(endpoint=".static", filename='dashboard.js') }}"></script>
+    </body>
+</html>

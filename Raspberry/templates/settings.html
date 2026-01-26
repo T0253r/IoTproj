@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="pl">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ustawienia Systemu</title>
+    <link rel="stylesheet" href="{{ url_for(endpoint='.static', filename='style.css') }}">
+    <style>
+        .settings-card {
+            background-color: var(--secondary);
+            padding: 2rem;
+            border-radius: 0.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .settings-section-title {
+            font-size: 1.5rem;
+            margin: 0 0 1.5rem 0;
+            color: var(--text);
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 0.5rem;
+        }
+
+        .settings-item-row {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .settings-item-info {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            flex: 1;
+        }
+
+        .settings-item-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            min-width: 150px;
+        }
+
+        .settings-item-field label {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            font-weight: 500;
+        }
+
+        .settings-item-field input[type="text"] {
+            background-color: #4a4a4a;
+            border: 1px solid #555;
+            color: var(--text);
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 1rem;
+            width: 100%;
+        }
+
+        .settings-item-field input[type="text"]:focus {
+            outline: 2px solid var(--primary);
+            border-color: var(--primary);
+        }
+
+        .settings-readonly {
+            background-color: transparent;
+            color: var(--text);
+            padding: 0.5rem;
+            font-size: 1rem;
+            opacity: 0.7;
+        }
+
+        .settings-action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-shrink: 0;
+        }
+
+        .settings-btn {
+            border: none;
+            padding: 0.5rem 1.5rem;
+            cursor: pointer;
+            border-radius: 0.25rem;
+            font-size: 0.9rem;
+            background-color: var(--primary);
+            color: var(--text);
+            transition: background-color 0.2s;
+        }
+
+        .settings-btn:hover {
+            background-color: var(--accent);
+        }
+
+        .settings-btn-danger {
+            background-color: #d32f2f;
+        }
+
+        .settings-btn-danger:hover {
+            background-color: #b71c1c;
+        }
+
+        .settings-back-link {
+            display: inline-block;
+            margin-top: 2rem;
+            padding: 0.75rem 1.5rem;
+            background-color: var(--secondary);
+            color: var(--text);
+            text-decoration: none;
+            border-radius: 0.25rem;
+            transition: background-color 0.2s;
+        }
+
+        .settings-back-link:hover {
+            background-color: var(--primary);
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <p class="app-title"><span class="mdi--hot-cold"></span>System Ogrzewania</p>
+        {% if current_user %}
+        <p>Witaj {{ current_user['username'] }}</p>
+        {% endif %}
+        <a class="mdi--gear" href="/settings"></a>
+    </nav>
+
+    <div class="settings-card">
+        <h2 class="settings-section-title">Twoje Urządzenie</h2>
+        {% if current_user %}
+        <div class="settings-item-row">
+            <div class="settings-item-info">
+                <div class="settings-item-field">
+                    <label>MAC</label>
+                    <span class="settings-readonly">{{ current_user['mac'] }}</span>
+                </div>
+                <div class="settings-item-field">
+                    <label>Hostname</label>
+                    <span class="settings-readonly">{{ current_user['hostname'] or 'N/A' }}</span>
+                </div>
+                <div class="settings-item-field">
+                    <label>IP</label>
+                    <span class="settings-readonly">{{ current_user['ip'] or 'N/A' }}</span>
+                </div>
+                <div class="settings-item-field">
+                    <label>Nazwa</label>
+                    <input type="text" id="device_name" value="{{ current_user['username'] or '' }}"
+                        placeholder="Nazwa urządzenia" />
+                </div>
+            </div>
+            <div class="settings-action-buttons">
+                <button class="settings-btn" onclick="updateUsername()">
+                    Zapisz
+                </button>
+            </div>
+        </div>
+        {% else %}
+        <p>Nie rozpoznano urządzenia.</p>
+        {% endif %}
+    </div>
+
+    <div class="settings-card">
+        <h2 class="settings-section-title">Edytuj pokoje</h2>
+        {% if controllers %}
+        {% for controller in controllers %}
+        <div class="settings-item-row">
+            <div class="settings-item-info">
+                <div class="settings-item-field">
+                    <label>ID</label>
+                    <span class="settings-readonly">{{ controller['controller_id'] }}</span>
+                </div>
+                <div class="settings-item-field">
+                    <label>Nazwa</label>
+                    <input type="text" id="controller_name_{{ controller['controller_id'] }}"
+                        value="{{ controller['name'] }}" />
+                </div>
+            </div>
+            <div class="settings-action-buttons">
+                <button class="settings-btn" onclick="updateControllerName({{ controller['controller_id'] }})">
+                    Zapisz
+                </button>
+                <button class="settings-btn settings-btn-danger"
+                    onclick="deleteController({{ controller['controller_id'] }})">
+                    Usuń
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p>Brak kontrolerów w systemie.</p>
+        {% endif %}
+    </div>
+
+    <a href="/" class="settings-back-link">← Powrót do Dashboard</a>
+
+    <script>
+        function updateControllerName(controllerId) {
+            const nameInput = document.getElementById(`controller_name_${controllerId}`);
+            const newName = nameInput.value.trim();
+
+            if (!newName) {
+                alert('Nazwa nie może być pusta');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('controller_id', controllerId);
+            formData.append('name', newName);
+
+            fetch('/update_controller_name', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => {
+                    if (response.ok) {
+                        alert('Nazwa kontrolera zaktualizowana');
+                        location.reload();
+                    } else {
+                        alert('Błąd podczas aktualizacji nazwy');
+                    }
+                })
+                .catch(error => {
+                    alert('Błąd: ' + error);
+                });
+        }
+
+        function deleteController(controllerId) {
+            if (!confirm('Czy na pewno chcesz usunąć ten kontroler?')) {
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('controller_id', controllerId);
+
+            fetch('/delete_controller', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => {
+                    if (response.ok) {
+                        alert('Kontroler usunięty');
+                        location.reload();
+                    } else {
+                        alert('Błąd podczas usuwania kontrolera');
+                    }
+                })
+                .catch(error => {
+                    alert('Błąd: ' + error);
+                });
+        }
+
+        function updateUsername() {
+            const nameInput = document.getElementById('device_name');
+            const newName = nameInput.value.trim();
+
+            const formData = new FormData();
+            formData.append('username', newName);
+
+            fetch('/update_username', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => {
+                    if (response.ok) {
+                        alert('Nazwa urządzenia zaktualizowana');
+                        location.reload();
+                    } else {
+                        alert('Błąd podczas aktualizacji nazwy');
+                    }
+                })
+                .catch(error => {
+                    alert('Błąd: ' + error);
+                });
+        }
+    </script>
+</body>
+
+</html>
