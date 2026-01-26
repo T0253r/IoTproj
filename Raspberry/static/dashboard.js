@@ -4,11 +4,16 @@ const controllerRow = document.getElementById('controller-row');
 
 let selectedControllerId = null;
 
-
 function getStatusClass(c) {
     if (c.target_temp > c.curr_temp) return 'heating';
     if (c.target_temp < c.curr_temp) return 'cooling';
     return 'stable';
+}
+
+const statusToDesc = {
+    'heating': 'Grzanie',
+    'cooling': 'Oczekiwanie',
+    'stable': 'Stabilna'
 }
 
 function getStatusInfo(priority) {
@@ -76,6 +81,48 @@ function createVortexSVG(controllerId) {
         </svg>`;
 }
 
+function createTemperaturePicker(controllerId, carouselId, onUpClick, onDownClick) {
+    // Create picker container
+    const pickerContainer = document.createElement('div');
+    pickerContainer.className = 'temp-picker-container';
+
+    // Up arrow
+    const upArrow = document.createElement('div');
+    upArrow.className = 'picker-arrow picker-arrow-up';
+    upArrow.textContent = '🢑';
+    upArrow.onclick = onUpClick;
+
+    // Carousel wrapper
+    const carouselWrapper = document.createElement('div');
+    carouselWrapper.className = 'picker-carousel-wrapper';
+    const carousel = document.createElement('div');
+    carousel.className = 'picker-carousel';
+    carousel.id = carouselId;
+
+    // Create temperature options from 15 to 40
+    for (let temp = 40; temp >= 15; temp -= 0.5) {
+        const option = document.createElement('div');
+        option.className = 'picker-option';
+        option.textContent = `${temp.toFixed(1)}\u00b0C`;
+        option.dataset.temp = temp;
+        carousel.appendChild(option);
+    }
+
+    carouselWrapper.appendChild(carousel);
+
+    // Down arrow
+    const downArrow = document.createElement('div');
+    downArrow.className = 'picker-arrow picker-arrow-down';
+    downArrow.textContent = '🢓';
+    downArrow.onclick = onDownClick;
+
+    pickerContainer.appendChild(upArrow);
+    pickerContainer.appendChild(carouselWrapper);
+    pickerContainer.appendChild(downArrow);
+
+    return pickerContainer;
+}
+
 function createOrUpdateControllerCard(c) {
     const cardId = `card-${c.controller_id}`;
     let card = document.getElementById(cardId);
@@ -140,8 +187,8 @@ function createOrUpdateControllerCard(c) {
 
     const temps = card.querySelectorAll('.controller-card-temp strong');
     if (temps.length >= 2) {
-        temps[0].textContent = `${c.curr_temp}°C`;
-        temps[1].textContent = `${c.target_temp}°C`;
+        temps[0].textContent = `${parseFloat(c.curr_temp).toFixed(1)}°C`;
+        temps[1].textContent = `${parseFloat(c.target_temp).toFixed(1)}°C`;
     }
 
     const statusInfo = getStatusInfo(c.priority);
@@ -173,7 +220,7 @@ function createOrUpdateControllerDetails(c) {
         currTempBox.className = 'temp-box';
         const currLabel = document.createElement('div');
         currLabel.className = 'temp-box-label';
-        currLabel.textContent = 'Aktualna temperatura';
+        currLabel.textContent = 'Obecna temperatura';
         const currValue = document.createElement('div');
         currValue.className = 'temp-box-value';
         currValue.id = `curr-temp-${c.controller_id}`;
@@ -184,40 +231,46 @@ function createOrUpdateControllerDetails(c) {
         targetTempBox.className = 'temp-box';
         const targetLabel = document.createElement('div');
         targetLabel.className = 'temp-box-label';
-        targetLabel.textContent = 'Zadana temperatura';
-        const targetValue = document.createElement('div');
-        targetValue.className = 'temp-box-value';
-        targetValue.id = `target-temp-${c.controller_id}`;
-        const tempControls = document.createElement('div');
-        tempControls.className = 'temp-controls';
-        const plusBtn = document.createElement('button');
-        plusBtn.className = 'temp-btn';
-        plusBtn.textContent = '+';
-        plusBtn.onclick = () => adjustTemp(c.controller_id, 0.5);
-        const minusBtn = document.createElement('button');
-        minusBtn.className = 'temp-btn';
-        minusBtn.textContent = '-';
-        minusBtn.onclick = () => adjustTemp(c.controller_id, -0.5);
-        tempControls.appendChild(plusBtn);
-        tempControls.appendChild(minusBtn);
+        targetLabel.textContent = 'Docelowa temperatura';
+
+        // Create picker using helper function
+        const pickerContainer = createTemperaturePicker(
+            c.controller_id,
+            `picker-carousel-${c.controller_id}`,
+            () => adjustTemp(c.controller_id, 0.5),
+            () => adjustTemp(c.controller_id, -0.5)
+        );
+
         targetTempBox.appendChild(targetLabel);
-        targetTempBox.appendChild(targetValue);
-        targetTempBox.appendChild(tempControls);
+        targetTempBox.appendChild(pickerContainer);
 
         tempGrid.appendChild(currTempBox);
         tempGrid.appendChild(targetTempBox);
 
         // Status Lines
-        const statusLine1 = document.createElement('div');
-        statusLine1.className = 'status-line';
-        statusLine1.textContent = 'Status: ';
-        const statusTextSpan = document.createElement('span');
-        statusTextSpan.className = 'status-text';
-        statusLine1.appendChild(statusTextSpan);
+        const statusBox = document.createElement('div');
+        statusBox.className = 'status-box';
 
+        // const statusLine1 = document.createElement('div');
+        // statusLine1.className = 'status-line';
+        // statusLine1.textContent = 'Status: ';
+        // const statusTextSpan = document.createElement('span');
+        // statusTextSpan.className = 'status-text';
+        // statusLine1.appendChild(statusTextSpan);
+
+        // const statusLine2 = document.createElement('div');
+        // statusLine2.className = 'status-line';
+        // statusLine2.id = `last-change-${c.controller_id}`;
+        const statusLine1 = document.createElement('div');
+        statusLine1.className = 'status-line status-text';
         const statusLine2 = document.createElement('div');
         statusLine2.className = 'status-line';
         statusLine2.id = `last-change-${c.controller_id}`;
+
+        statusBox.appendChild(statusLine1);
+        statusBox.appendChild(statusLine2);
+
+        tempGrid.appendChild(statusBox);
 
         // AutoTemp Section
         const sectionTitle = document.createElement('div');
@@ -227,7 +280,7 @@ function createOrUpdateControllerDetails(c) {
         const infoSmall = document.createElement('div');
         infoSmall.className = 'info-small';
         infoSmall.style.marginBottom = '1rem';
-        infoSmall.textContent = 'Automatyczna temperatura komfortowa po wykryciu obecności';
+        infoSmall.textContent = 'Automatyczna temperatura komfortowa po wykryciu Twojej obecności';
 
         // Toggle Switch
         const toggleContainer = document.createElement('div');
@@ -252,30 +305,21 @@ function createOrUpdateControllerDetails(c) {
         const comfortLabel = document.createElement('div');
         comfortLabel.className = 'comfort-temp-label';
         comfortLabel.textContent = 'Temperatura komfortowa';
-        const comfortControls = document.createElement('div');
-        comfortControls.className = 'comfort-controls';
-        const prefMinusBtn = document.createElement('button');
-        prefMinusBtn.className = 'temp-btn';
-        prefMinusBtn.textContent = '-';
-        prefMinusBtn.onclick = () => adjustPref(c.controller_id, -0.5);
-        const prefValue = document.createElement('div');
-        prefValue.className = 'comfort-temp-value';
-        prefValue.id = `pref-temp-${c.controller_id}`;
-        const prefPlusBtn = document.createElement('button');
-        prefPlusBtn.className = 'temp-btn';
-        prefPlusBtn.textContent = '+';
-        prefPlusBtn.onclick = () => adjustPref(c.controller_id, 0.5);
-        comfortControls.appendChild(prefMinusBtn);
-        comfortControls.appendChild(prefValue);
-        comfortControls.appendChild(prefPlusBtn);
+
+        // Create picker using helper function
+        const prefPickerContainer = createTemperaturePicker(
+            c.controller_id,
+            `pref-picker-carousel-${c.controller_id}`,
+            () => adjustPref(c.controller_id, 0.5),
+            () => adjustPref(c.controller_id, -0.5)
+        );
+
         comfortControl.appendChild(comfortLabel);
-        comfortControl.appendChild(comfortControls);
+        comfortControl.appendChild(prefPickerContainer);
 
         // Append all sections
         details.appendChild(h2);
         details.appendChild(tempGrid);
-        details.appendChild(statusLine1);
-        details.appendChild(statusLine2);
         details.appendChild(sectionTitle);
         details.appendChild(infoSmall);
         details.appendChild(toggleContainer);
@@ -285,16 +329,23 @@ function createOrUpdateControllerDetails(c) {
     }
 
     // Update details content
+    const statusClass = getStatusClass(c);
+    details.className = `controller-details ${statusClass}`;
+
     const h2 = details.querySelector('h2');
     h2.textContent = c.name;
 
 
     const currTempEl = document.getElementById(`curr-temp-${c.controller_id}`);
     console.log(c, currTempEl, (`curr-temp-${c.controller_id}`));
-    currTempEl.textContent = `${c.curr_temp}°C`;
+    currTempEl.textContent = `${parseFloat(c.curr_temp).toFixed(1)}°C`;
 
-    const targetTempEl = document.getElementById(`target-temp-${c.controller_id}`);
-    targetTempEl.textContent = `${c.target_temp}°C`;
+    // Update picker carousel position
+    const carousel = document.getElementById(`picker-carousel-${c.controller_id}`);
+    if (carousel) {
+        updatePickerPosition(carousel, c.target_temp);
+        updatePickerArrowsVisibility(`picker-carousel-${c.controller_id}`, c.target_temp);
+    }
 
     const statusInfo = getStatusInfo(c.priority);
     const statusTextSpan = details.querySelector('.status-text span');
@@ -311,17 +362,48 @@ function createOrUpdateControllerDetails(c) {
     }
 
     const lastChangeLine = document.getElementById(`last-change-${c.controller_id}`);
-    lastChangeLine.textContent = `Ostatnia zmiana: ${c.locked_by_name || 'N/A'} (${c.last_seen || 'Never'})`;
+    // calc time since last seen
+    const lastSeenDate = new Date(c.last_seen);
+    const now = new Date();
+    const timeDiff = Math.floor((now - lastSeenDate) / 1000); // in seconds
+    let lastSeenText = '';
+    if (timeDiff < 60) {
+        lastSeenText = `${timeDiff} s temu`;
+    }
+    else if (timeDiff < 3600) {
+        const minutes = Math.floor(timeDiff / 60);
+        lastSeenText = `${minutes} m temu`;
+    }
+    else if (timeDiff < 86400) {
+        const hours = Math.floor(timeDiff / 3600);
+        lastSeenText = `${hours} h temu`;
+    }
+    else {
+        const days = Math.floor(timeDiff / 86400);
+        lastSeenText = `${days} d temu`;
+    }
+    lastChangeLine.textContent = `${c.locked_by_name || 'N/A'}, ${lastSeenText || 'Nigdy'}`;
 
     const checkbox = document.getElementById(`autotemp-${c.controller_id}`);
     checkbox.checked = !!c.user_pref_temp;
     checkbox.onchange = () => toggleAutoTemp(c.controller_id, checkbox.checked, c.user_pref_temp || 21.5);
 
-    const prefTempEl = document.getElementById(`pref-temp-${c.controller_id}`);
-    prefTempEl.textContent = `${c.user_pref_temp || '21.5'}°C`;
+    // Update preference picker carousel position
+    const prefCarousel = document.getElementById(`pref-picker-carousel-${c.controller_id}`);
+    if (prefCarousel) {
+        updatePickerPosition(prefCarousel, c.user_pref_temp || 21.5);
+        updatePickerArrowsVisibility(`pref-picker-carousel-${c.controller_id}`, c.user_pref_temp || 21.5);
+    }
 }
 
 function loadControllers(controllers) {
+    // Handle empty controllers case
+    if (controllers.length === 0) {
+        showNoControllersMessage();
+        return;
+    } else {
+        hideNoControllersMessage();
+    }
 
     controllers.forEach(c => {
         createOrUpdateControllerCard(c);
@@ -334,6 +416,74 @@ function loadControllers(controllers) {
     } else if (selectedControllerId) {
         // Reselect current controller to maintain state
         selectController(selectedControllerId);
+    }
+}
+
+function showNoControllersMessage() {
+    let messageDiv = document.getElementById('no-controllers-message');
+    if (!messageDiv) {
+        messageDiv = document.createElement('div');
+        messageDiv.id = 'no-controllers-message';
+        messageDiv.className = 'no-controllers-message';
+        messageDiv.innerHTML = `
+            <div class="no-controllers-content">
+                <span class="mdi--information-outline no-controllers-icon"></span>
+                <hr>
+                <h3>Brak dostępnych kontrolerów</h3>
+                <p>Nie znaleziono żadnych kontrolerów w systemie.</p>
+                <div><a href="https://youtu.be/dQw4w9WgXcQ">Zakup kontroler</a> w oficjalnym sklepie.</div>
+            </div>
+        `;
+        controllerRow.appendChild(messageDiv);
+    }
+    messageDiv.style.display = 'block';
+}
+
+function hideNoControllersMessage() {
+    const messageDiv = document.getElementById('no-controllers-message');
+    if (messageDiv) {
+        messageDiv.style.display = 'none';
+    }
+}
+
+function updatePickerPosition(carousel, targetTemp) {
+    const options = carousel.querySelectorAll('.picker-option');
+    const optionHeight = parseFloat(getComputedStyle(options[0]).height);
+
+    // Find the index of the target temperature
+    let targetIndex = 0;
+    options.forEach((option, index) => {
+        const temp = parseFloat(option.dataset.temp);
+        option.classList.remove('selected');
+        if (temp === targetTemp) {
+            targetIndex = index;
+            option.classList.add('selected');
+        }
+    });
+
+    // Scroll to position the selected item in the center
+    const scrollPosition = targetIndex * optionHeight;
+    carousel.style.transform = `translateY(-${scrollPosition}px)`;
+}
+
+function updatePickerArrowsVisibility(carouselId, currentTemp) {
+    const carousel = document.getElementById(carouselId);
+    if (!carousel) return;
+
+    const pickerContainer = carousel.closest('.temp-picker-container');
+    if (!pickerContainer) return;
+
+    const upArrow = pickerContainer.querySelector('.picker-arrow-up');
+    const downArrow = pickerContainer.querySelector('.picker-arrow-down');
+
+    // Hide up arrow at max temperature (40°C)
+    if (upArrow) {
+        upArrow.style.opacity = currentTemp >= 40 ? '0' : '1';
+    }
+
+    // Hide down arrow at min temperature (15°C)
+    if (downArrow) {
+        downArrow.style.opacity = currentTemp <= 15 ? '0' : '1';
     }
 }
 
@@ -361,8 +511,10 @@ function selectController(controllerId) {
 }
 
 async function adjustTemp(controllerId, delta) {
-    const targetElement = document.getElementById(`target-temp-${controllerId}`);
-    const currentTemp = parseFloat(targetElement.textContent);
+    // Get current temperature from carousel
+    const carousel = document.getElementById(`picker-carousel-${controllerId}`);
+    const selected = carousel.querySelector('.picker-option.selected');
+    const currentTemp = selected ? parseFloat(selected.dataset.temp) : 21.5;
     const newTemp = currentTemp + delta;
 
     // Validate temperature range
@@ -371,15 +523,18 @@ async function adjustTemp(controllerId, delta) {
         return;
     }
 
-    // Optimistically update UI
-    targetElement.textContent = `${newTemp}°C`;
+    // Optimistically update UI - update picker carousel
+    if (carousel) {
+        updatePickerPosition(carousel, newTemp);
+        updatePickerArrowsVisibility(`picker-carousel-${controllerId}`, newTemp);
+    }
 
     // Update card temperature and status
     const card = document.getElementById(`card-${controllerId}`);
     if (card) {
         const cardTargetTemp = card.querySelectorAll('.controller-card-temp strong')[1];
         if (cardTargetTemp) {
-            cardTargetTemp.textContent = `${newTemp}°C`;
+            cardTargetTemp.textContent = `${newTemp.toFixed(1)}°C`;
         }
 
         // Get current temp to determine new status
@@ -411,6 +566,20 @@ async function adjustTemp(controllerId, delta) {
     // Update status info in details view
     const details = document.getElementById(`controller-${controllerId}`);
     if (details) {
+        // Get current temp to determine new status
+        const currTempEl = document.getElementById(`curr-temp-${controllerId}`);
+        const currTemp = currTempEl ? parseFloat(currTempEl.textContent) : parseFloat(c.curr_temp);
+
+        // Update details status class
+        details.className = 'controller-details';
+        if (newTemp > currTemp) {
+            details.classList.add('heating');
+        } else if (newTemp < currTemp) {
+            details.classList.add('cooling');
+        } else {
+            details.classList.add('stable');
+        }
+
         const statusInfo = getStatusInfo(2);
         const statusTextSpan = details.querySelector('.status-text span');
         if (statusTextSpan) {
@@ -444,12 +613,14 @@ async function adjustTemp(controllerId, delta) {
         if (!result.success) {
             alert(result.message);
             // Revert UI on error
-            targetElement.textContent = `${currentTemp}°C`;
+            if (carousel) {
+                updatePickerPosition(carousel, currentTemp);
+            }
             const card = document.getElementById(`card-${controllerId}`);
             if (card) {
                 const cardTargetTemp = card.querySelectorAll('.controller-card-temp strong')[1];
                 if (cardTargetTemp) {
-                    cardTargetTemp.textContent = `${currentTemp}°C`;
+                    cardTargetTemp.textContent = `${currentTemp.toFixed(1)}°C`;
                 }
                 // Revert status class
                 const cardCurrTemp = card.querySelectorAll('.controller-card-temp strong')[0];
@@ -470,12 +641,14 @@ async function adjustTemp(controllerId, delta) {
     } catch (error) {
         console.error('Error adjusting temperature:', error);
         // Revert UI on error
-        targetElement.textContent = `${currentTemp}°C`;
+        if (carousel) {
+            updatePickerPosition(carousel, currentTemp);
+        }
         const card = document.getElementById(`card-${controllerId}`);
         if (card) {
             const cardTargetTemp = card.querySelectorAll('.controller-card-temp strong')[1];
             if (cardTargetTemp) {
-                cardTargetTemp.textContent = `${currentTemp}°C`;
+                cardTargetTemp.textContent = `${currentTemp.toFixed(1)}°C`;
             }
             // Revert status class
             const cardCurrTemp = card.querySelectorAll('.controller-card-temp strong')[0];
@@ -496,8 +669,10 @@ async function adjustTemp(controllerId, delta) {
 }
 
 async function adjustPref(controllerId, delta) {
-    const prefElement = document.getElementById(`pref-temp-${controllerId}`);
-    const currentPref = parseFloat(prefElement.textContent);
+    // Get current preference from carousel
+    const prefCarousel = document.getElementById(`pref-picker-carousel-${controllerId}`);
+    const selected = prefCarousel.querySelector('.picker-option.selected');
+    const currentPref = selected ? parseFloat(selected.dataset.temp) : 21.5;
     const newPref = currentPref + delta;
 
     // Validate temperature range
@@ -507,7 +682,10 @@ async function adjustPref(controllerId, delta) {
     }
 
     // Optimistically update UI
-    prefElement.textContent = `${newPref}°C`;
+    if (prefCarousel) {
+        updatePickerPosition(prefCarousel, newPref);
+        updatePickerArrowsVisibility(`pref-picker-carousel-${controllerId}`, newPref);
+    }
 
     try {
         const response = await fetch('/set_preference', {
@@ -525,12 +703,16 @@ async function adjustPref(controllerId, delta) {
         if (!result.success) {
             alert(result.message);
             // Revert UI on error
-            prefElement.textContent = `${currentPref}°C`;
+            if (prefCarousel) {
+                updatePickerPosition(prefCarousel, currentPref);
+            }
         }
     } catch (error) {
         console.error('Error adjusting preference:', error);
         // Revert UI on error
-        prefElement.textContent = `${currentPref}°C`;
+        if (prefCarousel) {
+            updatePickerPosition(prefCarousel, currentPref);
+        }
     }
 }
 
@@ -567,6 +749,14 @@ async function refreshControllers(isInitialLoad = false) {
     try {
         const response = await fetch('/refresh_controllers');
         const controllers = await response.json();
+
+        // Handle empty controllers case
+        if (controllers.length === 0) {
+            showNoControllersMessage();
+            return;
+        } else {
+            hideNoControllersMessage();
+        }
 
         // Always use create-or-update logic for consistency
         controllers.forEach(c => {

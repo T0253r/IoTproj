@@ -15,6 +15,10 @@ body {
     background: var(--background);
     color: var(--text);
     padding-inline: 0.4rem;
+
+    max-width: 412px;
+    margin: auto;
+    --screen-width: min(100vw, 412px);
 }
 
 nav {
@@ -38,6 +42,65 @@ nav {
     }
 }
 
+h1 {
+    font-size: 1.5em;
+    margin-left: 1rem;
+    margin-bottom: 0;
+    width: fit-content;
+    background: linear-gradient(to right, var(--text) 50%, var(--background) 150%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+}
+
+a {
+    text-decoration: none;
+    color: var(--text);
+}
+
+@view-transition {
+    navigation: auto;
+}
+
+/* custom mpa animation */
+@keyframes move-out {
+    from {
+        transform: translateY(0%);
+        opacity: 1;
+    }
+
+    to {
+        transform: translateY(-10%);
+        opacity: 0;
+    }
+}
+
+@keyframes move-in {
+    from {
+        transform: translateY(10%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0%);
+        opacity: 1;
+    }
+}
+
+::view-transition-old(root) {
+    animation: 0.2s ease-in both move-out;
+}
+
+::view-transition-new(root) {
+    animation: 0.2s ease-in both move-in;
+}
+
+
+
+/* ----------------------------
+MARK: Controller cards 
+---------------------------- */
+
 .controller-row {
     display: flex;
     flex-direction: row;
@@ -46,7 +109,6 @@ nav {
     gap: 1rem;
     padding-block: 1rem;
     overflow-x: auto;
-    scroll-behavior: smooth;
     position: relative;
 
     /* Hide scrollbar */
@@ -63,7 +125,7 @@ nav {
     position: sticky;
     left: -2px;
     height: 10rem;
-    min-width: 1rem;
+    min-width: 0.5rem;
     background: linear-gradient(to left, transparent, var(--background));
     pointer-events: none;
     z-index: 1000;
@@ -74,10 +136,53 @@ nav {
     position: sticky;
     right: -2px;
     height: 10rem;
-    min-width: 1rem;
+    min-width: 0.5rem;
     background: linear-gradient(to right, transparent, var(--background));
     pointer-events: none;
     z-index: 1000;
+}
+
+.no-controllers-message {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 10rem;
+    text-align: center;
+}
+
+.no-controllers-message .no-controllers-icon {
+    width: 4rem;
+    height: 4rem;
+    aspect-ratio: 1;
+    color: var(--primary);
+}
+
+.no-controllers-content hr {
+    height: 0.2rem;
+    border: none;
+    background-color: var(--primary);
+}
+
+.no-controllers-content div {
+    margin-top: 1rem;
+
+    a {
+        text-decoration: underline;
+        color: var(--primary)
+    }
+}
+
+.no-controllers-content h3 {
+    color: var(--text);
+    margin: 0 0 0.5rem 0;
+    font-size: 1.5em;
+}
+
+.no-controllers-content p {
+    color: var(--text-secondary);
+    margin: 0;
+    font-size: 0.9em;
 }
 
 .controller-card {
@@ -85,7 +190,7 @@ nav {
     background-color: var(--secondary);
     padding: 1rem;
     border-radius: 0.5rem;
-    min-width: 50vw;
+    min-width: calc(var(--screen-width) * 0.6);
     max-width: 3rem;
     overflow: hidden;
 
@@ -93,6 +198,14 @@ nav {
     outline: 0.2em solid var(--secondary);
     outline-offset: 0.1em;
     transition: outline 0.2s;
+}
+
+.controller-name {
+    display: block;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    max-width: 90%;
 }
 
 .controller-card-temp {
@@ -110,6 +223,8 @@ nav {
 
         strong {
             font-size: 2.2em;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: 900;
         }
     }
 }
@@ -233,39 +348,114 @@ nav {
 }
 
 
+/* ----------------------------
+MARK: Controller details 
+---------------------------- */
+
+
 .controller-details {
-    background-color: var(--background);
-    padding: 2rem;
-    border-radius: 0;
+    position: relative;
+    /* background-color: var(--background); */
+    background: linear-gradient(15deg, var(--vortex-main) -100%, var(--background));
+
+    padding: 1.5rem;
+    padding-inline: 1rem;
+    margin-inline: 1.5rem;
+    border-radius: 0.5rem;
+
+    outline: 0.2em solid var(--vortex-main);
+    outline-offset: 0.1em;
+    transition: --vortex-main 0.5s, --vortex-accent 0.5s, outline-color 0.2s;
+}
+
+.controller-details::before {
+    position: absolute;
+    top: 1.5rem;
+    right: 1rem;
+    color: var(--vortex-main);
+    font-weight: 900;
+}
+
+.controller-details.heating::before {
+    content: "Grzanie";
+}
+.controller-details.cooling::before {
+    content: "Czekanie";
+}
+.controller-details.stable::before {
+    content: "Stabilnie";
 }
 
 .controller-details h2 {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     margin: 0 0 1.5rem 0;
     color: var(--text);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    max-width: 75%;
 }
 
 .temp-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
     gap: 1rem;
     margin-bottom: 1rem;
+
+    &>.temp-box:nth-child(2) {
+        grid-row: span 2;
+    }
 }
 
-.temp-box {
-    background-color: #4a4a4a;
-    padding: 1.5rem;
+.temp-box,
+.status-box {
+    padding: 1rem;
     border-radius: 0.25rem;
+
+    background-color: var(--background);
+    outline: 0.2em solid var(--secondary);
+    outline-offset: 0.1em;
+    transition: outline 0.2s;
+
+    /* background: linear-gradient(15deg, var(--primary) -100%, var(--background)); */
+
+    .status-line:first-child {
+        font-size: 1.4rem;
+        opacity: 1;
+        color: var(--text);
+    }
+
+    .status-line:last-child {
+        font-size: min(0.6rem, 8vw);
+        opacity: 0.5;
+    }
+
 }
+
+/* .status-box {
+    position: relative;
+
+    &::before {
+        content: "";
+        position: absolute;
+        top: -0.3em;
+        right: -1rem;
+        width: 2rem;
+        height: calc(100% + 0.2em);
+        background-color: var(--background);
+        border-block: 0.2em solid var(--secondary);
+    }
+} */
 
 .temp-box-label {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     margin-bottom: 0.5rem;
     opacity: 0.9;
 }
 
 .temp-box-value {
-    font-size: 2rem;
+    font-size: min(2.5rem, 8vw);
     font-weight: 400;
     color: var(--text);
 }
@@ -296,6 +486,72 @@ nav {
     cursor: not-allowed;
 }
 
+/* Apple-style Temperature Picker */
+.temp-picker-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 0.5rem;
+
+    --option-height: 30px;
+}
+
+.picker-carousel-wrapper {
+    height: calc(var(--option-height) * 3);
+    overflow: hidden;
+    position: relative;
+    width: 100%;
+    mask-image: linear-gradient(to bottom, transparent, black calc(var(--option-height) * 1), black calc(var(--option-height) * 2), transparent);
+    -webkit-mask-image: linear-gradient(to bottom, transparent, black calc(var(--option-height) * 1), black calc(var(--option-height) * 2), transparent);
+}
+
+.picker-carousel {
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease;
+    padding-top: var(--option-height);
+}
+
+.picker-option {
+    height: var(--option-height);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1em;
+    color: var(--text);
+    opacity: 0.3;
+    transition: opacity 0.2s, font-size 0.2s;
+    user-select: none;
+}
+
+.picker-option.selected {
+    opacity: 1;
+    font-size: 1.5em;
+    font-weight: 500;
+}
+
+.picker-arrow {
+    background: none;
+    border: none;
+    color: var(--text);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    line-height: 1;
+    user-select: none;
+    opacity: 0.7;
+
+    transition: opacity 0.2s, color 0.2s, transform 0.1s;
+}
+
+.picker-arrow:hover {
+    opacity: 1;
+}
+
+.picker-arrow:active {
+    transform: scale(0.9);
+}
+
 .status-line {
     font-size: 0.9rem;
     margin-bottom: 0.5rem;
@@ -318,7 +574,7 @@ nav {
 .toggle-switch {
     position: relative;
     display: inline-block;
-    width: 50px;
+    min-width: 50px;
     height: 26px;
 }
 
@@ -353,11 +609,11 @@ nav {
 }
 
 input:checked+.slider {
-    background-color: var(--primary);
+    background-color: var(--vortex-main);
 }
 
 input:checked+.slider:before {
-    transform: translateX(24px);
+    transform: translateX(120%);
 }
 
 input:disabled+.slider {
@@ -366,13 +622,32 @@ input:disabled+.slider {
 }
 
 .comfort-temp-control {
-    background-color: #4a4a4a;
     padding: 1rem;
     border-radius: 0.25rem;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 1rem;
+
+    background-color: var(--background);
+
+    outline: 0.2em solid var(--secondary);
+    outline-offset: 0.1em;
+
+    transition: opacity 0.2s;
+
+    .temp-picker-container {
+        font-size: 1.5em;
+        --option-height: 40px;
+
+    }
 }
+
+.controller-details:has(input[type="checkbox"]:not(:checked)) .comfort-temp-control {
+    opacity: 0.5;
+    pointer-events: none;
+    user-select: none;
+}
+
 
 .comfort-temp-label {
     font-size: 1rem;
@@ -383,9 +658,9 @@ input:disabled+.slider {
     font-weight: 400;
 }
 
+/* Remove this old style since we're now using the picker */
 .comfort-controls {
-    display: flex;
-    gap: 0.5rem;
+    display: none;
 }
 
 button {
@@ -439,6 +714,11 @@ input[type="number"]:disabled {
     opacity: 0.3;
 }
 
+
+
+/* ----------------------------
+MARK: Icons 
+---------------------------- */
 
 .mdi--fire {
     display: inline-block;
@@ -524,7 +804,16 @@ input[type="number"]:disabled {
     mask-size: 100% 100%;
 }
 
-a {
-    text-decoration: none;
-    color: var(--primary);
+.mdi--information-outline {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    --svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M11 9h2V7h-2m1 13c-4.41 0-8-3.59-8-8s3.59-8 8-8s8 3.59 8 8s-3.59 8-8 8m0-18A10 10 0 0 0 2 12a10 10 0 0 0 10 10a10 10 0 0 0 10-10A10 10 0 0 0 12 2m-1 15h2v-6h-2z'/%3E%3C/svg%3E");
+    background-color: currentColor;
+    -webkit-mask-image: var(--svg);
+    mask-image: var(--svg);
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
 }

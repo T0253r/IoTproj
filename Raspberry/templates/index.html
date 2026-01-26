@@ -13,11 +13,13 @@
 
     <nav>
         <p class="app-title"><span class="mdi--hot-cold"></span>System Ogrzewania</p>
-        {% if user_username %}
-        <p>Witaj {{ user_username }}</p>
-        {% endif %}
         <a class="mdi--gear" href="/settings"></a>
     </nav>
+    {% if user_username %}
+    <h1>
+        Witaj w domu, {{ user_username }}
+    </h1>
+    {% endif %}
 
     <div class="controller-row" id="controller-row"></div>
 
@@ -26,5 +28,15 @@
     <script src="{{ url_for(endpoint='.static', filename='dashboard.js') }}"></script>
 
 </body>
+
+<script>
+    // Enable horizontal scrolling with mouse wheel on controller-row
+    if (controllerRow) {
+        controllerRow.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            controllerRow.scrollLeft += e.deltaY;
+        });
+    }
+</script>
 
 </html>

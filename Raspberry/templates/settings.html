@@ -8,86 +8,116 @@
     <link rel="stylesheet" href="{{ url_for(endpoint='.static', filename='style.css') }}">
     <style>
         .settings-card {
-            background-color: var(--secondary);
-            padding: 2rem;
+            background-color: var(--background);
+            background: linear-gradient(15deg, var(--primary) -100%, var(--background));
+            padding: 1.5rem;
             border-radius: 0.5rem;
-            margin-bottom: 2rem;
+            margin: 1rem;
+
+            /* Outlined box style matching index */
+            outline: 0.2em solid var(--secondary);
+            outline-offset: 0.1em;
+            transition: outline 0.2s;
         }
 
         .settings-section-title {
-            font-size: 1.5rem;
-            margin: 0 0 1.5rem 0;
+            font-size: 1.25rem;
+            margin: 0 0 1rem 0;
             color: var(--text);
-            border-bottom: 2px solid var(--primary);
-            padding-bottom: 0.5rem;
+            font-weight: 600;
         }
 
         .settings-item-row {
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: space-between;
             gap: 1rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background-color: var(--background);
+            border-radius: 0.25rem;
+
+            /* Outlined box for each item */
+            outline: 0.2em solid var(--secondary);
+            outline-offset: 0.1em;
+        }
+
+        .settings-item-row:last-child {
+            margin-bottom: 0;
         }
 
         .settings-item-info {
             display: flex;
+            flex-direction: row;
+            gap: 0.75rem;
+            width: 100%;
+        }
+
+        .settings-user .settings-item-info {
             flex-direction: column;
-            gap: 1rem;
-            flex: 1;
         }
 
         .settings-item-field {
             display: flex;
             flex-direction: column;
             gap: 0.25rem;
-            min-width: 150px;
+
+            &:last-child {
+                flex: 2;
+            }
         }
 
         .settings-item-field label {
-            font-size: 0.85rem;
-            opacity: 0.8;
+            font-size: 0.8rem;
+            opacity: 0.6;
             font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         .settings-item-field input[type="text"] {
-            background-color: #4a4a4a;
-            border: 1px solid #555;
+            background-color: var(--background);
+            border: none;
+            outline: 0.15em solid var(--secondary);
+            outline-offset: 0.05em;
             color: var(--text);
-            padding: 0.5rem;
+            padding: 0.75rem;
             border-radius: 0.25rem;
             font-size: 1rem;
-            width: 100%;
+            /* width: 70%; */
+            transition: outline-color 0.2s;
         }
 
         .settings-item-field input[type="text"]:focus {
-            outline: 2px solid var(--primary);
-            border-color: var(--primary);
+            outline-color: var(--primary);
         }
 
         .settings-readonly {
             background-color: transparent;
             color: var(--text);
-            padding: 0.5rem;
+            padding: 0.5rem 0;
             font-size: 1rem;
-            opacity: 0.7;
+            opacity: 0.8;
         }
 
         .settings-action-buttons {
             display: flex;
             gap: 0.5rem;
-            flex-shrink: 0;
+            flex-wrap: wrap;
+            width: 100%;
         }
 
         .settings-btn {
             border: none;
-            padding: 0.5rem 1.5rem;
+            padding: 0.75rem 1.5rem;
             cursor: pointer;
             border-radius: 0.25rem;
             font-size: 0.9rem;
-            background-color: var(--primary);
+            /* background-color: var(--primary); */
+            outline: 0.15em solid var(--primary);
             color: var(--text);
             transition: background-color 0.2s;
+            flex: 1;
+            min-width: 120px;
         }
 
         .settings-btn:hover {
@@ -95,7 +125,7 @@
         }
 
         .settings-btn-danger {
-            background-color: #d32f2f;
+            outline: 0.15em solid #d32f2f;
         }
 
         .settings-btn-danger:hover {
@@ -103,18 +133,125 @@
         }
 
         .settings-back-link {
-            display: inline-block;
-            margin-top: 2rem;
+            display: block;
+            width: fit-content;
+
+            margin: 1rem;
             padding: 0.75rem 1.5rem;
-            background-color: var(--secondary);
+            margin-inline: auto;
+            background-color: var(--background);
             color: var(--text);
             text-decoration: none;
             border-radius: 0.25rem;
-            transition: background-color 0.2s;
+            transition: outline-color 0.2s;
+
+            /* Outlined box style */
+            outline: 0.2em solid var(--secondary);
+            outline-offset: 0.1em;
         }
 
         .settings-back-link:hover {
-            background-color: var(--primary);
+            outline-color: var(--primary);
+        }
+
+        /* Mobile-first responsive design */
+        @media (max-width: 412px) {
+            .settings-card {
+                padding: 1rem;
+                margin-bottom: 1rem;
+            }
+
+            .settings-item-row {
+                padding: 0.75rem;
+            }
+
+            .settings-btn {
+                padding: 0.65rem 1rem;
+                font-size: 0.85rem;
+            }
+        }
+
+        /* Custom Modal Styles */
+        .custom-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            animation: fadeIn 0.2s forwards;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+            }
+        }
+
+        .custom-modal {
+            background-color: var(--background);
+            border-radius: 0.5rem;
+            padding: 2rem;
+            max-width: 90%;
+            width: 400px;
+            outline: 0.2em solid var(--secondary);
+            outline-offset: 0.1em;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            transform: scale(0.9);
+            animation: scaleIn 0.2s forwards;
+        }
+
+        @keyframes scaleIn {
+            to {
+                transform: scale(1);
+            }
+        }
+
+        .custom-modal-message {
+            color: var(--text);
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+
+        .custom-modal-buttons {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+        }
+
+        .custom-modal-btn {
+            border: none;
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            border-radius: 0.25rem;
+            font-size: 0.9rem;
+            outline: 0.15em solid var(--primary);
+            background-color: transparent;
+            color: var(--text);
+            transition: background-color 0.2s;
+            min-width: 80px;
+        }
+
+        .custom-modal-btn:hover {
+            background-color: var(--accent);
+        }
+
+        .custom-modal-btn-cancel {
+            outline-color: var(--secondary);
+        }
+
+        .custom-modal-btn-danger {
+            outline-color: #d32f2f;
+        }
+
+        .custom-modal-btn-danger:hover {
+            background-color: #b71c1c;
         }
     </style>
 </head>
@@ -122,13 +259,11 @@
 <body>
     <nav>
         <p class="app-title"><span class="mdi--hot-cold"></span>System Ogrzewania</p>
-        {% if current_user %}
-        <p>Witaj {{ current_user['username'] }}</p>
-        {% endif %}
-        <a class="mdi--gear" href="/settings"></a>
     </nav>
 
-    <div class="settings-card">
+    <a href="/" class="settings-back-link">← Powrót do Pulpitu</a>
+
+    <div class="settings-card settings-user ">
         <h2 class="settings-section-title">Twoje Urządzenie</h2>
         {% if current_user %}
         <div class="settings-item-row">
@@ -194,15 +329,89 @@
         {% endif %}
     </div>
 
-    <a href="/" class="settings-back-link">← Powrót do Dashboard</a>
-
     <script>
+        // Custom Modal Functions
+        function showCustomAlert(message) {
+            return new Promise((resolve) => {
+                const overlay = document.createElement('div');
+                overlay.className = 'custom-modal-overlay';
+
+                const modal = document.createElement('div');
+                modal.className = 'custom-modal';
+
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'custom-modal-message';
+                messageDiv.textContent = message;
+
+                const buttonsDiv = document.createElement('div');
+                buttonsDiv.className = 'custom-modal-buttons';
+
+                const okBtn = document.createElement('button');
+                okBtn.className = 'custom-modal-btn';
+                okBtn.textContent = 'OK';
+                okBtn.onclick = () => {
+                    document.body.removeChild(overlay);
+                    resolve();
+                };
+
+                buttonsDiv.appendChild(okBtn);
+                modal.appendChild(messageDiv);
+                modal.appendChild(buttonsDiv);
+                overlay.appendChild(modal);
+                document.body.appendChild(overlay);
+
+                okBtn.focus();
+            });
+        }
+
+        function showCustomConfirm(message) {
+            return new Promise((resolve) => {
+                const overlay = document.createElement('div');
+                overlay.className = 'custom-modal-overlay';
+
+                const modal = document.createElement('div');
+                modal.className = 'custom-modal';
+
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'custom-modal-message';
+                messageDiv.textContent = message;
+
+                const buttonsDiv = document.createElement('div');
+                buttonsDiv.className = 'custom-modal-buttons';
+
+                const cancelBtn = document.createElement('button');
+                cancelBtn.className = 'custom-modal-btn custom-modal-btn-cancel';
+                cancelBtn.textContent = 'Anuluj';
+                cancelBtn.onclick = () => {
+                    document.body.removeChild(overlay);
+                    resolve(false);
+                };
+
+                const confirmBtn = document.createElement('button');
+                confirmBtn.className = 'custom-modal-btn custom-modal-btn-danger';
+                confirmBtn.textContent = 'Potwierdź';
+                confirmBtn.onclick = () => {
+                    document.body.removeChild(overlay);
+                    resolve(true);
+                };
+
+                buttonsDiv.appendChild(cancelBtn);
+                buttonsDiv.appendChild(confirmBtn);
+                modal.appendChild(messageDiv);
+                modal.appendChild(buttonsDiv);
+                overlay.appendChild(modal);
+                document.body.appendChild(overlay);
+
+                confirmBtn.focus();
+            });
+        }
+
         function updateControllerName(controllerId) {
             const nameInput = document.getElementById(`controller_name_${controllerId}`);
             const newName = nameInput.value.trim();
 
             if (!newName) {
-                alert('Nazwa nie może być pusta');
+                showCustomAlert('Nazwa nie może być pusta');
                 return;
             }
 
@@ -216,19 +425,19 @@
             })
                 .then(response => {
                     if (response.ok) {
-                        alert('Nazwa kontrolera zaktualizowana');
-                        location.reload();
+                        showCustomAlert('Nazwa kontrolera zaktualizowana').then(() => location.reload());
                     } else {
-                        alert('Błąd podczas aktualizacji nazwy');
+                        showCustomAlert('Błąd podczas aktualizacji nazwy');
                     }
                 })
                 .catch(error => {
-                    alert('Błąd: ' + error);
+                    showCustomAlert('Błąd: ' + error);
                 });
         }
 
-        function deleteController(controllerId) {
-            if (!confirm('Czy na pewno chcesz usunąć ten kontroler?')) {
+        async function deleteController(controllerId) {
+            const confirmed = await showCustomConfirm('Czy na pewno chcesz usunąć ten kontroler?');
+            if (!confirmed) {
                 return;
             }
 
@@ -241,14 +450,13 @@
             })
                 .then(response => {
                     if (response.ok) {
-                        alert('Kontroler usunięty');
-                        location.reload();
+                        showCustomAlert('Kontroler usunięty').then(() => location.reload());
                     } else {
-                        alert('Błąd podczas usuwania kontrolera');
+                        showCustomAlert('Błąd podczas usuwania kontrolera');
                     }
                 })
                 .catch(error => {
-                    alert('Błąd: ' + error);
+                    showCustomAlert('Błąd: ' + error);
                 });
         }
 
@@ -265,14 +473,13 @@
             })
                 .then(response => {
                     if (response.ok) {
-                        alert('Nazwa urządzenia zaktualizowana');
-                        location.reload();
+                        showCustomAlert('Nazwa urządzenia zaktualizowana').then(() => location.reload());
                     } else {
-                        alert('Błąd podczas aktualizacji nazwy');
+                        showCustomAlert('Błąd podczas aktualizacji nazwy');
                     }
                 })
                 .catch(error => {
-                    alert('Błąd: ' + error);
+                    showCustomAlert('Błąd: ' + error);
                 });
         }
     </script>
