@@ -7,7 +7,7 @@ import sys
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - INIT_DB - %(message)s')
 
-DB_PATH = "/var/lib/iot/iot.db"
+DB_PATH = "/opt/iot/db/iot.db"
 #DB_PATH = "iot.db" # relative path for testing
 
 def main():

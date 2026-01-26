@@ -2,7 +2,7 @@
 #include <PubSubClient.h>
 #include <EduIntro.h>
 
-#define DHT11_PIN A0
+#define DHT11_PIN 5
 #define LED_PIN 3
 #define CONTROLLER_ID "1" //unikalne ID przypiasane urzadzeniu, nadrukowane na obudowie
 
@@ -40,23 +40,32 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
   lastServerMsg = millis();
   target_temp = max(MIN_TEMP, msg.toInt());
+  Serial.println("Received message with target temp");
   Serial.println(String(CONTROLLER_ID) + " target temp: " + target_temp);
 }
 
 void maintainConnections() {
   if (WiFi.status() != WL_CONNECTED) {
     if (millis() - lastConnAttempt > RECONNECT_INTERVAL) {
+      Serial.println("Attempting to connect to Wifi");
       lastConnAttempt = millis();
-      WiFi.begin(ssid, password);
+      int status = WiFi.begin(ssid, password);
+      Serial.print("Wifi status: ");
+      Serial.println(status);
     }
     return;
   }
 
   if (!client.connected()) {
     if (millis() - lastConnAttempt > RECONNECT_INTERVAL) {
+      Serial.println("Attempting to connect to mqtt broker");
       lastConnAttempt = millis();
       if (client.connect(CONTROLLER_ID)) {
-        client.subscribe("controllers/" CONTROLLER_ID "/target-temp");
+        Serial.println("Connected to mqtt broker");
+        client.subscribe(topic_target_temp);
+      } else {
+          Serial.print("Failed, rc=");
+          Serial.println(client.state());
       }
     }
   } else {
@@ -68,6 +77,7 @@ void setup() {
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, LOW);
   Serial.begin(9600);
+  Serial.println("Serial communication started");
   client.setServer(mqtt_server, mqtt_port);
   client.setCallback(callback);
   lastServerMsg = millis();
@@ -85,21 +95,21 @@ void loop() {
   if (now - lastReport > REPORT_INTERVAL) {
     lastReport = now;
     Serial.println(String(CONTROLLER_ID) + " measured temp: " + current_temp);
+    Serial.println("Attempting to publish measured temp");
     client.publish(topic_curr_temp, String(current_temp).c_str());
   }
 
   // Watchdog serwera
   if (now - lastServerMsg > SERVER_TIMEOUT) {
+    Serial.println("Serwer inactive, reducing temp to min");
     target_temp = MIN_TEMP;
   }
 
   // Regulacja temperatury
   if (current_temp >= target_temp) {
     analogWrite(LED_PIN, 0);
-    Serial.println("Temp goal met, turning the heating off");
   } else if (current_temp <= (target_temp - HYSTERESIS)){
     analogWrite(LED_PIN, 255);
-    Serial.println("Temp below target-temp, turning the heating on");
   }
 }
 

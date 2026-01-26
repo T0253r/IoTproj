@@ -8,10 +8,10 @@ import sys
 from scapy.all import ARP, Ether, srp
 
 LEASE_FILE = "/var/lib/misc/dnsmasq.leases"
-DB_PATH = "/var/lib/iot/iot.db"
+DB_PATH = "/opt/iot/db/iot.db"
 INTERFACE = "wlan0"
-OFFLINE_THRESHOLD = 3
-SCAN_INTERVAL = 10
+OFFLINE_THRESHOLD = 2
+SCAN_INTERVAL = 5
 
 logging.basicConfig(
     level=logging.INFO,
@@ -39,6 +39,7 @@ def sync_dhcp_to_db():
                         leases.append((parts[1], parts[2], parts[3]))
         
         if not leases:
+            logging.info("No leases found")
             return
 
         conn = get_db_connection()
@@ -51,6 +52,7 @@ def sync_dhcp_to_db():
                     ip=excluded.ip,
                     hostname=excluded.hostname
                 ''', leases)
+                logging.info("Synced devices present on dhcp to database")
         finally:
             conn.close()
     except Exception as e:
@@ -76,7 +78,9 @@ def get_monitored_devices():
     return devices
 
 def scan_network(ip_list):
+    logging.info("Starting network scan")
     if not ip_list:
+        logging.info("No devices to scan")
         return set()
     try:
         ans, _ = srp(Ether(dst="ff:ff:ff:ff:ff:ff")/ARP(pdst=ip_list), 
@@ -121,9 +125,8 @@ def main():
                 missed_scans_counter[mac] = 0 if currently_online_in_db else OFFLINE_THRESHOLD
 
             if ip in active_ips:
-                if missed_scans_counter[mac] > 0:
-                    logging.info(f"Device Reconnected: {hostname} ({ip})")
-                
+
+                logging.info(f"Device Online: {hostname} ({ip})")
                 missed_scans_counter[mac] = 0
                 
                 if not currently_online_in_db:

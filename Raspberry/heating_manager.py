@@ -7,7 +7,7 @@ import logging
 import sys
 import os
 
-DB_PATH = "/var/lib/iot/iot.db"
+DB_PATH = "/opt/iot/db/iot.db"
 BROKER = "127.0.0.1"
 PORT = 1883
 MIN_TEMP = 10
@@ -41,6 +41,7 @@ def load_known_controllers():
         conn.close()
 
 def register_new_controller(controller_id):
+    logging.info("Attempting to register new controller")
     conn = get_db_connection()
     try:
         with conn:
@@ -62,6 +63,8 @@ def on_message(client, userdata, msg):
 
         controller_id = topic.split('/')[1]
         current_temp = float(payload)
+
+        logging.info(f"Received message (id/current): {controller_id}/{current_temp}")
         
         if controller_id not in known_controllers:
             register_new_controller(controller_id)
@@ -71,7 +74,7 @@ def on_message(client, userdata, msg):
             with conn:
                 conn.execute("""
                     UPDATE controllers
-                    SET current_temp = ?, last_seen = CURRENT_TIMESTAMP 
+                    SET curr_temp = ?, last_seen = CURRENT_TIMESTAMP 
                     WHERE controller_id = ?
                 """, (current_temp, controller_id))
         finally:
@@ -127,19 +130,20 @@ def process_presence_logic():
 def sync_loop(client):
     while True:
         try:
-
             process_presence_logic()
 
             conn = get_db_connection()
             try:
                 with conn:
                     controllers = conn.execute("SELECT controller_id, target_temp FROM controllers").fetchall()
+                    logging.info(f"Found {len(controllers)} controllers in db to sync")
                 
                 for controller in controllers:
                     c_id = controller['controller_id']
                     target = controller['target_temp']
                     if c_id and target is not None:
                         client.publish(f"controllers/{c_id}/target-temp", str(int(target)))
+                        logging.info(f"Published message (id/target): {c_id}/{str(int(target))}")
             finally:
                 conn.close()
             

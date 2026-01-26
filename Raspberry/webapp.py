@@ -4,7 +4,7 @@ from flasgger import Swagger, swag_from
 
 app = Flask(__name__)
 app.secret_key = "iot_secret_key"
-DB_PATH = "/var/lib/iot/iot.db"
+DB_PATH = "/opt/iot/db/iot.db"
 
 # swagger configuration
 swagger_config = {
