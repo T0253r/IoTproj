@@ -1,10 +1,11 @@
 :root {
     --text: #f4e7e7;
+    --text-secondary: #8f8f8f;
     --background: #1c1818;
     --primary: #ff4c29;
     --secondary: #281b19;
     --accent: #e02b2b;
-    --blue: #188FA7;
+    --blue: #0F5C6B;
 
     font-family: Inter, sans-serif;
 
@@ -98,6 +99,8 @@ nav {
     display: flex;
     justify-content: space-between;
     padding-block: .5em;
+    position: relative;
+    z-index: 1;
 
     div {
         display: flex;
@@ -151,44 +154,60 @@ nav {
 .card-vortex svg circle:nth-child(odd) {
     animation: spin-clockwise 40s linear infinite;
     transform-origin: 50% 50%;
+    transition: opacity 0.8s ease-in-out;
 }
 
 .card-vortex svg circle:nth-child(even) {
     animation: spin-counter-clockwise 30s linear infinite;
     transform-origin: 50% 50%;
+    transition: opacity 0.8s ease-in-out;
+}
+
+@property --vortex-main {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #fff;
+}
+
+@property --vortex-accent {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #088e28;
+}
+
+.controller-card {
+    transition: --vortex-main 0.5s, --vortex-accent 0.5s, outline-color 0.2s;
+
+    &.active {
+        outline-color: var(--vortex-main);
+    }
 }
 
 
-.heating  {
+.heating {
     --vortex-main: var(--primary);
     --vortex-accent: var(--accent);
-
-    &.active {
-        outline-color: var(--primary);
-    }
 }
 
 .cooling {
     --vortex-main: var(--blue);
     --vortex-accent: var(--text);
 
-    &.active {
-        outline-color: var(--blue);
+    .card-vortex svg circle {
+        animation-direction: reverse;
+        opacity: 10%;
+        transition: opacity 1.2s ease-in-out;
     }
 }
 
 .stable {
-    --vortex-main: var(--secondary);
-    --vortex-accent: var(--text);
-
-    &.active {
-        outline-color: var(--text);
-    }
+    --vortex-main: var(--text-secondary);
+    --vortex-accent: var(--secondary);
 
     .card-vortex svg circle {
-        animation: none;
-        transform-origin: 0% 0%;
+        animation-play-state: paused;
         opacity: 10%;
+        transition: opacity 1.2s ease-in-out;
     }
 }
 
@@ -206,6 +225,11 @@ nav {
             stop-color: var(--vortex-main);
         }
     }
+}
+
+.info-small {
+    color: var(--text);
+    opacity: 0.5;
 }
 
 
@@ -276,18 +300,6 @@ nav {
     font-size: 0.9rem;
     margin-bottom: 0.5rem;
     opacity: 0.9;
-}
-
-.status-locked {
-    color: var(--primary);
-}
-
-.status-auto {
-    color: var(--accent);
-}
-
-.status-default {
-    opacity: 0.7;
 }
 
 .section-title {
