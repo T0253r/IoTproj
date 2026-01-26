@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="pl">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ustawienia Systemu</title>
+    <link rel="stylesheet" href="{{ url_for(endpoint='.static', filename='style.css') }}">
+    <style>
+        .settings-card {
+            background-color: var(--background);
+            background: linear-gradient(15deg, var(--primary) -100%, var(--background));
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            margin: 1rem;
+
+            /* Outlined box style matching index */
+            outline: 0.2em solid var(--secondary);
+            outline-offset: 0.1em;
+            transition: outline 0.2s;
+        }
+
+        .settings-section-title {
+            font-size: 1.25rem;
+            margin: 0 0 1rem 0;
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        .settings-item-row {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background-color: var(--background);
+            border-radius: 0.25rem;
+
+            /* Outlined box for each item */
+            outline: 0.2em solid var(--secondary);
+            outline-offset: 0.1em;
+        }
+
+        .settings-item-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .settings-item-info {
+            display: flex;
+            flex-direction: row;
+            gap: 0.75rem;
+            width: 100%;
+        }
+
+        .settings-user .settings-item-info {
+            flex-direction: column;
+        }
+
+        .settings-item-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+
+            &:last-child {
+                flex: 2;
+            }
+        }
+
+        .settings-item-field label {
+            font-size: 0.8rem;
+            opacity: 0.6;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .settings-item-field input[type="text"] {
+            background-color: var(--background);
+            border: none;
+            outline: 0.15em solid var(--secondary);
+            outline-offset: 0.05em;
+            color: var(--text);
+            padding: 0.75rem;
+            border-radius: 0.25rem;
+            font-size: 1rem;
+            /* width: 70%; */
+            transition: outline-color 0.2s;
+        }
+
+        .settings-item-field input[type="text"]:focus {
+            outline-color: var(--primary);
+        }
+
+        .settings-readonly {
+            background-color: transparent;
+            color: var(--text);
+            padding: 0.5rem 0;
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+
+        .settings-action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+
+        .settings-btn {
+            border: none;
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            border-radius: 0.25rem;
+            font-size: 0.9rem;
+            /* background-color: var(--primary); */
+            outline: 0.15em solid var(--primary);
+            color: var(--text);
+            transition: background-color 0.2s;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .settings-btn:hover {
+            background-color: var(--accent);
+        }
+
+        .settings-btn-danger {
+            outline: 0.15em solid #d32f2f;
+        }
+
+        .settings-btn-danger:hover {
+            background-color: #b71c1c;
+        }
+
+        .settings-back-link {
+            display: block;
+            width: fit-content;
+
+            margin: 1rem;
+            padding: 0.75rem 1.5rem;
+            margin-inline: auto;
+            background-color: var(--background);
+            color: var(--text);
+            text-decoration: none;
+            border-radius: 0.25rem;
+            transition: outline-color 0.2s;
+
+            /* Outlined box style */
+            outline: 0.2em solid var(--secondary);
+            outline-offset: 0.1em;
+        }
+
+        .settings-back-link:hover {
+            outline-color: var(--primary);
+        }
+
+        /* Mobile-first responsive design */
+        @media (max-width: 412px) {
+            .settings-card {
+                padding: 1rem;
+                margin-bottom: 1rem;
+            }
+
+            .settings-item-row {
+                padding: 0.75rem;
+            }
+
+            .settings-btn {
+                padding: 0.65rem 1rem;
+                font-size: 0.85rem;
+            }
+        }
+
+        /* Custom Modal Styles */
+        .custom-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            animation: fadeIn 0.2s forwards;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+            }
+        }
+
+        .custom-modal {
+            background-color: var(--background);
+            border-radius: 0.5rem;
+            padding: 2rem;
+            max-width: 90%;
+            width: 400px;
+            outline: 0.2em solid var(--secondary);
+            outline-offset: 0.1em;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            transform: scale(0.9);
+            animation: scaleIn 0.2s forwards;
+        }
+
+        @keyframes scaleIn {
+            to {
+                transform: scale(1);
+            }
+        }
+
+        .custom-modal-message {
+            color: var(--text);
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+
+        .custom-modal-buttons {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+        }
+
+        .custom-modal-btn {
+            border: none;
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            border-radius: 0.25rem;
+            font-size: 0.9rem;
+            outline: 0.15em solid var(--primary);
+            background-color: transparent;
+            color: var(--text);
+            transition: background-color 0.2s;
+            min-width: 80px;
+        }
+
+        .custom-modal-btn:hover {
+            background-color: var(--accent);
+        }
+
+        .custom-modal-btn-cancel {
+            outline-color: var(--secondary);
+        }
+
+        .custom-modal-btn-danger {
+            outline-color: #d32f2f;
+        }
+
+        .custom-modal-btn-danger:hover {
+            background-color: #b71c1c;
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <p class="app-title"><span class="mdi--hot-cold"></span>System Ogrzewania</p>
+    </nav>
+
+    <a href="/" class="settings-back-link">← Powrót do Pulpitu</a>
+
+    <div class="settings-card settings-user ">
+        <h2 class="settings-section-title">Twoje Urządzenie</h2>
+        {% if current_user %}
+        <div class="settings-item-row">
+            <div class="settings-item-info">
+                <div class="settings-item-field">
+                    <label>MAC</label>
+                    <span class="settings-readonly">{{ current_user['mac'] }}</span>
+                </div>
+                <div class="settings-item-field">
+                    <label>Hostname</label>
+                    <span class="settings-readonly">{{ current_user['hostname'] or 'N/A' }}</span>
+                </div>
+                <div class="settings-item-field">
+                    <label>IP</label>
+                    <span class="settings-readonly">{{ current_user['ip'] or 'N/A' }}</span>
+                </div>
+                <div class="settings-item-field">
+                    <label>Nazwa</label>
+                    <input type="text" id="device_name" value="{{ current_user['username'] or '' }}"
+                        placeholder="Nazwa urządzenia" />
+                </div>
+            </div>
+            <div class="settings-action-buttons">
+                <button class="settings-btn" onclick="updateUsername()">
+                    Zapisz
+                </button>
+            </div>
+        </div>
+        {% else %}
+        <p>Nie rozpoznano urządzenia.</p>
+        {% endif %}
+    </div>
+
+    <div class="settings-card">
+        <h2 class="settings-section-title">Edytuj pokoje</h2>
+        {% if controllers %}
+        {% for controller in controllers %}
+        <div class="settings-item-row">
+            <div class="settings-item-info">
+                <div class="settings-item-field">
+                    <label>ID</label>
+                    <span class="settings-readonly">{{ controller['controller_id'] }}</span>
+                </div>
+                <div class="settings-item-field">
+                    <label>Nazwa</label>
+                    <input type="text" id="controller_name_{{ controller['controller_id'] }}"
+                        value="{{ controller['name'] }}" />
+                </div>
+            </div>
+            <div class="settings-action-buttons">
+                <button class="settings-btn" onclick="updateControllerName({{ controller['controller_id'] }})">
+                    Zapisz
+                </button>
+                <button class="settings-btn settings-btn-danger"
+                    onclick="deleteController({{ controller['controller_id'] }})">
+                    Usuń
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p>Brak kontrolerów w systemie.</p>
+        {% endif %}
+    </div>
+
+    <script>
+        // Custom Modal Functions
+        function showCustomAlert(message) {
+            return new Promise((resolve) => {
+                const overlay = document.createElement('div');
+                overlay.className = 'custom-modal-overlay';
+
+                const modal = document.createElement('div');
+                modal.className = 'custom-modal';
+
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'custom-modal-message';
+                messageDiv.textContent = message;
+
+                const buttonsDiv = document.createElement('div');
+                buttonsDiv.className = 'custom-modal-buttons';
+
+                const okBtn = document.createElement('button');
+                okBtn.className = 'custom-modal-btn';
+                okBtn.textContent = 'OK';
+                okBtn.onclick = () => {
+                    document.body.removeChild(overlay);
+                    resolve();
+                };
+
+                buttonsDiv.appendChild(okBtn);
+                modal.appendChild(messageDiv);
+                modal.appendChild(buttonsDiv);
+                overlay.appendChild(modal);
+                document.body.appendChild(overlay);
+
+                okBtn.focus();
+            });
+        }
+
+        function showCustomConfirm(message) {
+            return new Promise((resolve) => {
+                const overlay = document.createElement('div');
+                overlay.className = 'custom-modal-overlay';
+
+                const modal = document.createElement('div');
+                modal.className = 'custom-modal';
+
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'custom-modal-message';
+                messageDiv.textContent = message;
+
+                const buttonsDiv = document.createElement('div');
+                buttonsDiv.className = 'custom-modal-buttons';
+
+                const cancelBtn = document.createElement('button');
+                cancelBtn.className = 'custom-modal-btn custom-modal-btn-cancel';
+                cancelBtn.textContent = 'Anuluj';
+                cancelBtn.onclick = () => {
+                    document.body.removeChild(overlay);
+                    resolve(false);
+                };
+
+                const confirmBtn = document.createElement('button');
+                confirmBtn.className = 'custom-modal-btn custom-modal-btn-danger';
+                confirmBtn.textContent = 'Potwierdź';
+                confirmBtn.onclick = () => {
+                    document.body.removeChild(overlay);
+                    resolve(true);
+                };
+
+                buttonsDiv.appendChild(cancelBtn);
+                buttonsDiv.appendChild(confirmBtn);
+                modal.appendChild(messageDiv);
+                modal.appendChild(buttonsDiv);
+                overlay.appendChild(modal);
+                document.body.appendChild(overlay);
+
+                confirmBtn.focus();
+            });
+        }
+
+        function updateControllerName(controllerId) {
+            const nameInput = document.getElementById(`controller_name_${controllerId}`);
+            const newName = nameInput.value.trim();
+
+            if (!newName) {
+                showCustomAlert('Nazwa nie może być pusta');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('controller_id', controllerId);
+            formData.append('name', newName);
+
+            fetch('/update_controller_name', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => {
+                    if (response.ok) {
+                        showCustomAlert('Nazwa kontrolera zaktualizowana').then(() => location.reload());
+                    } else {
+                        showCustomAlert('Błąd podczas aktualizacji nazwy');
+                    }
+                })
+                .catch(error => {
+                    showCustomAlert('Błąd: ' + error);
+                });
+        }
+
+        async function deleteController(controllerId) {
+            const confirmed = await showCustomConfirm('Czy na pewno chcesz usunąć ten kontroler?');
+            if (!confirmed) {
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('controller_id', controllerId);
+
+            fetch('/delete_controller', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => {
+                    if (response.ok) {
+                        showCustomAlert('Kontroler usunięty').then(() => location.reload());
+                    } else {
+                        showCustomAlert('Błąd podczas usuwania kontrolera');
+                    }
+                })
+                .catch(error => {
+                    showCustomAlert('Błąd: ' + error);
+                });
+        }
+
+        function updateUsername() {
+            const nameInput = document.getElementById('device_name');
+            const newName = nameInput.value.trim();
+
+            const formData = new FormData();
+            formData.append('username', newName);
+
+            fetch('/update_username', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => {
+                    if (response.ok) {
+                        showCustomAlert('Nazwa urządzenia zaktualizowana').then(() => location.reload());
+                    } else {
+                        showCustomAlert('Błąd podczas aktualizacji nazwy');
+                    }
+                })
+                .catch(error => {
+                    showCustomAlert('Błąd: ' + error);
+                });
+        }
+    </script>
+</body>
+
+</html>
