@@ -87,6 +87,17 @@
             flex-direction: row;
             gap: 0.75rem;
             width: 100%;
+            position: relative;
+        }
+
+        .settings-last-seen {
+            display: block;
+            position: absolute;
+            top: -0.1rem;
+            right: 0;
+            color: var(--text);
+            font-size: 0.6rem;
+            opacity: 0.5;
         }
 
         .settings-user .settings-item-info {
@@ -149,7 +160,11 @@
             cursor: pointer;
             border-radius: 0.25rem;
             font-size: 0.9rem;
-            /* background-color: var(--primary); */
+            line-height: 0.8;
+            text-transform: uppercase;
+            font-family: Inter, sans-serif;
+            font-weight: 500;
+            background-color: var(--background);
             outline: 0.15em solid var(--primary);
             color: var(--text);
             transition: background-color 0.2s;
@@ -321,6 +336,9 @@
         {% for controller in controllers %}
         <div class="settings-item-row">
             <div class="settings-item-info">
+                <span class="settings-last-seen">
+                    Ostania aktywność: {{ controller['last_seen'] or '--' }}
+                </span>
                 <div class="settings-item-field">
                     <label>ID</label>
                     <span class="settings-readonly">{{ controller['controller_id'] }}</span>
