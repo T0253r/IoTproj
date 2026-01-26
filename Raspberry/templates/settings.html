@@ -1,524 +1,486 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pl">
-
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Ustawienia Systemu</title>
-    <link rel="stylesheet" href="{{ url_for(endpoint='.static', filename='style.css') }}">
-    <style>
-        @view-transition {
-            navigation: auto;
-        }
-
-        /* custom mpa animation */
-        @keyframes move-out {
-            from {
-                transform: translateY(0%);
-                opacity: 1;
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Ustawienia Systemu</title>
+        <meta name="theme-color" content="#1c1818" />
+        <link
+            rel="stylesheet"
+            href="{{ url_for(endpoint='.static', filename='style.css') }}"
+        />
+        <link
+            rel="stylesheet"
+            href="{{ url_for(endpoint='.static', filename='alerts.css') }}"
+        />
+        <style>
+            @view-transition {
+                navigation: auto;
             }
 
-            to {
-                transform: translateY(-10%);
-                opacity: 0;
+            /* custom mpa animation */
+            @keyframes move-out {
+                from {
+                    transform: translateY(0%);
+                    opacity: 1;
+                }
+
+                to {
+                    transform: translateY(-10%);
+                    opacity: 0;
+                }
             }
-        }
 
-        @keyframes move-in {
-            from {
-                transform: translateY(10%);
-                opacity: 0;
+            @keyframes move-in {
+                from {
+                    transform: translateY(10%);
+                    opacity: 0;
+                }
+
+                to {
+                    transform: translateY(0%);
+                    opacity: 1;
+                }
             }
 
-            to {
-                transform: translateY(0%);
-                opacity: 1;
+            ::view-transition-old(root) {
+                animation: 0.2s ease-in both move-out;
             }
-        }
 
-        ::view-transition-old(root) {
-            animation: 0.2s ease-in both move-out;
-        }
-
-        ::view-transition-new(root) {
-            animation: 0.2s ease-in both move-in;
-        }
-
-        .settings-card {
-            background-color: var(--background);
-            background: linear-gradient(15deg, var(--primary) -100%, var(--background));
-            padding: 1.5rem;
-            border-radius: 0.5rem;
-            margin: 1rem;
-
-            /* Outlined box style matching index */
-            outline: 0.2em solid var(--secondary);
-            outline-offset: 0.1em;
-            transition: outline 0.2s;
-        }
-
-        .settings-section-title {
-            font-size: 1.25rem;
-            margin: 0 0 1rem 0;
-            color: var(--text);
-            font-weight: 600;
-        }
-
-        .settings-item-row {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            background-color: var(--background);
-            border-radius: 0.25rem;
-
-            /* Outlined box for each item */
-            outline: 0.2em solid var(--secondary);
-            outline-offset: 0.1em;
-        }
-
-        .settings-item-row:last-child {
-            margin-bottom: 0;
-        }
-
-        .settings-item-info {
-            display: flex;
-            flex-direction: row;
-            gap: 0.75rem;
-            width: 100%;
-            position: relative;
-        }
-
-        .settings-last-seen {
-            display: block;
-            position: absolute;
-            top: -0.1rem;
-            right: 0;
-            color: var(--text);
-            font-size: 0.6rem;
-            opacity: 0.5;
-        }
-
-        .settings-user .settings-item-info {
-            flex-direction: column;
-        }
-
-        .settings-item-field {
-            display: flex;
-            flex-direction: column;
-            gap: 0.25rem;
-
-            &:last-child {
-                flex: 2;
+            ::view-transition-new(root) {
+                animation: 0.2s ease-in both move-in;
             }
-        }
 
-        .settings-item-field label {
-            font-size: 0.8rem;
-            opacity: 0.6;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .settings-item-field input[type="text"] {
-            background-color: var(--background);
-            border: none;
-            outline: 0.15em solid var(--secondary);
-            outline-offset: 0.05em;
-            color: var(--text);
-            padding: 0.75rem;
-            border-radius: 0.25rem;
-            font-size: 1rem;
-            /* width: 70%; */
-            transition: outline-color 0.2s;
-        }
-
-        .settings-item-field input[type="text"]:focus {
-            outline-color: var(--primary);
-        }
-
-        .settings-readonly {
-            background-color: transparent;
-            color: var(--text);
-            padding: 0.5rem 0;
-            font-size: 1rem;
-            opacity: 0.8;
-        }
-
-        .settings-action-buttons {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-            width: 100%;
-        }
-
-        .settings-btn {
-            border: none;
-            padding: 0.75rem 1.5rem;
-            cursor: pointer;
-            border-radius: 0.25rem;
-            font-size: 0.9rem;
-            line-height: 0.8;
-            text-transform: uppercase;
-            font-family: Inter, sans-serif;
-            font-weight: 500;
-            background-color: var(--background);
-            outline: 0.15em solid var(--primary);
-            color: var(--text);
-            transition: background-color 0.2s;
-            flex: 1;
-            min-width: 120px;
-        }
-
-        .settings-btn:hover {
-            background-color: var(--accent);
-        }
-
-        .settings-btn-danger {
-            outline: 0.15em solid #d32f2f;
-        }
-
-        .settings-btn-danger:hover {
-            background-color: #b71c1c;
-        }
-
-        .settings-back-link:hover {
-            outline-color: var(--primary);
-        }
-
-        /* Mobile-first responsive design */
-        @media (max-width: 412px) {
             .settings-card {
-                padding: 1rem;
-                margin-bottom: 1rem;
+                position: relative;
+                background: linear-gradient(
+                    15deg,
+                    var(--primary) -100%,
+                    var(--background)
+                );
+                padding: 1.5rem;
+                border-radius: 0.5rem;
+                margin: 1rem;
+
+                /* Outlined box style matching index */
+                outline: 0.2em solid var(--secondary);
+                outline-offset: 0.1em;
+                transition: outline 0.2s;
+            }
+
+            .settings-section-title {
+                font-size: 1.25rem;
+                margin: 0 0 1rem 0;
+                color: var(--text);
+                font-weight: 600;
             }
 
             .settings-item-row {
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+                margin-bottom: 1rem;
+                background-color: var(--background);
+                border-radius: 0.25rem;
+
+                /* Outlined box for each item */
+                outline: 0.2em solid var(--secondary);
+                outline-offset: 0.1em;
+            }
+
+            .settings-item-row:last-child {
+                margin-bottom: 0;
+            }
+
+            .settings-item-info {
+                display: flex;
+                flex-direction: row;
+                gap: 0.75rem;
+                width: 100%;
+                position: relative;
+            }
+
+            .settings-last-seen {
+                display: block;
+                position: absolute;
+                top: -0.1rem;
+                right: 0;
+                color: var(--text);
+                font-size: 0.6rem;
+                opacity: 0.5;
+                transition: color 0.2s;
+            }
+
+            .settings-item-row.offline {
+                outline-color: #d32f2f;
+            }
+
+            .settings-item-row.offline .settings-last-seen {
+                color: #d32f2f;
+                opacity: 1;
+            }
+
+            .settings-user .settings-item-info {
+                flex-direction: column;
+            }
+
+            .settings-item-field {
+                display: flex;
+                flex-direction: column;
+                gap: 0.25rem;
+
+                &:last-child {
+                    flex: 2;
+                }
+            }
+
+            .settings-item-field label {
+                font-size: 0.8rem;
+                opacity: 0.6;
+                font-weight: 500;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+
+            .settings-item-field input[type="text"] {
+                background-color: var(--background);
+                border: none;
+                outline: 0.15em solid var(--secondary);
+                outline-offset: 0.05em;
+                color: var(--text);
                 padding: 0.75rem;
+                border-radius: 0.25rem;
+                font-size: 1rem;
+                /* width: 70%; */
+                transition: outline-color 0.2s;
+            }
+
+            .settings-item-field input[type="text"]:focus {
+                outline-color: var(--primary);
+            }
+
+            .settings-readonly {
+                background-color: transparent;
+                color: var(--text);
+                padding: 0.5rem 0;
+                font-size: 1rem;
+                opacity: 0.8;
+            }
+
+            .settings-action-buttons {
+                display: flex;
+                gap: 0.5rem;
+                flex-wrap: wrap;
+                width: 100%;
             }
 
             .settings-btn {
-                padding: 0.65rem 1rem;
-                font-size: 0.85rem;
+                border: none;
+                padding: 0.75rem 1.5rem;
+                cursor: pointer;
+                border-radius: 0.25rem;
+                font-size: 0.9rem;
+                line-height: 0.8;
+                text-transform: uppercase;
+                font-family: Inter, sans-serif;
+                font-weight: 500;
+                background-color: var(--background);
+                outline: 0.15em solid var(--primary);
+                color: var(--text);
+                transition: background-color 0.2s;
+                flex: 1;
+                min-width: 120px;
             }
-        }
 
-        /* Custom Modal Styles */
-        .custom-modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            opacity: 0;
-            animation: fadeIn 0.2s forwards;
-        }
-
-        @keyframes fadeIn {
-            to {
-                opacity: 1;
+            .settings-btn:hover {
+                background-color: var(--accent);
             }
-        }
 
-        .custom-modal {
-            background-color: var(--background);
-            border-radius: 0.5rem;
-            padding: 2rem;
-            max-width: 90%;
-            width: 400px;
-            outline: 0.2em solid var(--secondary);
-            outline-offset: 0.1em;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-            transform: scale(0.9);
-            animation: scaleIn 0.2s forwards;
-        }
-
-        @keyframes scaleIn {
-            to {
-                transform: scale(1);
+            .settings-btn-danger {
+                outline: 0.15em solid #d32f2f;
             }
-        }
 
-        .custom-modal-message {
-            color: var(--text);
-            font-size: 1.1rem;
-            margin-bottom: 1.5rem;
-            line-height: 1.5;
-        }
+            .settings-btn-danger:hover {
+                background-color: #b71c1c;
+            }
 
-        .custom-modal-buttons {
-            display: flex;
-            gap: 0.75rem;
-            justify-content: flex-end;
-        }
+            .settings-back-link:hover {
+                outline-color: var(--primary);
+            }
 
-        .custom-modal-btn {
-            border: none;
-            padding: 0.75rem 1.5rem;
-            cursor: pointer;
-            border-radius: 0.25rem;
-            font-size: 0.9rem;
-            outline: 0.15em solid var(--primary);
-            background-color: transparent;
-            color: var(--text);
-            transition: background-color 0.2s;
-            min-width: 80px;
-        }
+            /* Mobile-first responsive design */
+            @media (max-width: 412px) {
+                .settings-card {
+                    padding: 1rem;
+                    margin-bottom: 1rem;
+                }
 
-        .custom-modal-btn:hover {
-            background-color: var(--accent);
-        }
+                .settings-item-row {
+                    padding: 0.75rem;
+                }
 
-        .custom-modal-btn-cancel {
-            outline-color: var(--secondary);
-        }
+                .settings-btn {
+                    padding: 0.65rem 1rem;
+                    font-size: 0.85rem;
+                }
+            }
+        </style>
+    </head>
 
-        .custom-modal-btn-danger {
-            outline-color: #d32f2f;
-        }
+    <body>
+        <nav>
+            <p class="app-title">
+                <span class="mdi--hot-cold"></span>System Ogrzewania
+            </p>
+            <a class="mdi--home-variant" href="/"></a>
+        </nav>
 
-        .custom-modal-btn-danger:hover {
-            background-color: #b71c1c;
-        }
-    </style>
-</head>
-
-<body>
-    <nav>
-        <p class="app-title"><span class="mdi--hot-cold"></span>System Ogrzewania</p>
-        <a class="mdi--home-variant" href="/"></a>
-    </nav>
-
-    <div class="settings-card settings-user ">
-        <h2 class="settings-section-title">Twoje Urządzenie</h2>
-        {% if current_user %}
-        <div class="settings-item-row">
-            <div class="settings-item-info">
-                <div class="settings-item-field">
-                    <label>MAC</label>
-                    <span class="settings-readonly">{{ current_user['mac'] }}</span>
+        <div class="settings-card settings-user">
+            <h2 class="settings-section-title">Twoje Urządzenie</h2>
+            {% if current_user %}
+            <div class="settings-item-row">
+                <div class="settings-item-info">
+                    <div class="settings-item-field">
+                        <label>MAC</label>
+                        <span class="settings-readonly"
+                            >{{ current_user['mac'] }}</span
+                        >
+                    </div>
+                    <div class="settings-item-field">
+                        <label>Hostname</label>
+                        <span class="settings-readonly"
+                            >{{ current_user['hostname'] or 'N/A' }}</span
+                        >
+                    </div>
+                    <div class="settings-item-field">
+                        <label>IP</label>
+                        <span class="settings-readonly"
+                            >{{ current_user['ip'] or 'N/A' }}</span
+                        >
+                    </div>
+                    <div class="settings-item-field">
+                        <label>Nazwa</label>
+                        <input
+                            type="text"
+                            id="device_name"
+                            value="{{ current_user['username'] or '' }}"
+                            maxlength="40"
+                            placeholder="Nazwa urządzenia"
+                        />
+                    </div>
                 </div>
-                <div class="settings-item-field">
-                    <label>Hostname</label>
-                    <span class="settings-readonly">{{ current_user['hostname'] or 'N/A' }}</span>
-                </div>
-                <div class="settings-item-field">
-                    <label>IP</label>
-                    <span class="settings-readonly">{{ current_user['ip'] or 'N/A' }}</span>
-                </div>
-                <div class="settings-item-field">
-                    <label>Nazwa</label>
-                    <input type="text" id="device_name" value="{{ current_user['username'] or '' }}"
-                        placeholder="Nazwa urządzenia" />
+                <div class="settings-action-buttons">
+                    <button class="settings-btn" onclick="updateUsername()">
+                        Zapisz
+                    </button>
                 </div>
             </div>
-            <div class="settings-action-buttons">
-                <button class="settings-btn" onclick="updateUsername()">
-                    Zapisz
-                </button>
-            </div>
+            {% else %}
+            <p>Nie rozpoznano urządzenia.</p>
+            {% endif %}
         </div>
-        {% else %}
-        <p>Nie rozpoznano urządzenia.</p>
-        {% endif %}
-    </div>
 
-    <div class="settings-card">
-        <h2 class="settings-section-title">Edytuj pokoje</h2>
-        {% if controllers %}
-        {% for controller in controllers %}
-        <div class="settings-item-row">
-            <div class="settings-item-info">
-                <span class="settings-last-seen">
-                    Ostania aktywność: {{ controller['last_seen'] or '--' }}
-                </span>
-                <div class="settings-item-field">
-                    <label>ID</label>
-                    <span class="settings-readonly">{{ controller['controller_id'] }}</span>
+        <div class="settings-card">
+            <h2 class="settings-section-title">Edytuj pokoje</h2>
+            {% if controllers %} {% for controller in controllers %}
+            <div class="settings-item-row">
+                <div class="settings-item-info">
+                    <span
+                        class="settings-last-seen"
+                        id="last_seen_{{ controller['controller_id'] }}"
+                        data-timestamp="{{ controller['last_seen'] }}"
+                    >
+                        Ostatnia aktywność: {{ controller['last_seen'] }}
+                    </span>
+                    <div class="settings-item-field">
+                        <label>ID</label>
+                        <span class="settings-readonly"
+                            >{{ controller['controller_id'] }}</span
+                        >
+                    </div>
+                    <div class="settings-item-field">
+                        <label>Nazwa</label>
+                        <input
+                            type="text"
+                            id="controller_name_{{ controller['controller_id'] }}"
+                            value="{{ controller['name'] }}"
+                            maxlength="40"
+                        />
+                    </div>
                 </div>
-                <div class="settings-item-field">
-                    <label>Nazwa</label>
-                    <input type="text" id="controller_name_{{ controller['controller_id'] }}"
-                        value="{{ controller['name'] }}" />
+                <div class="settings-action-buttons">
+                    <button
+                        class="settings-btn"
+                        onclick="updateControllerName({{ controller['controller_id'] }})"
+                    >
+                        Zapisz
+                    </button>
+                    <button
+                        class="settings-btn settings-btn-danger"
+                        onclick="deleteController({{ controller['controller_id'] }})"
+                    >
+                        Usuń
+                    </button>
                 </div>
             </div>
-            <div class="settings-action-buttons">
-                <button class="settings-btn" onclick="updateControllerName({{ controller['controller_id'] }})">
-                    Zapisz
-                </button>
-                <button class="settings-btn settings-btn-danger"
-                    onclick="deleteController({{ controller['controller_id'] }})">
-                    Usuń
-                </button>
-            </div>
+            {% endfor %} {% else %}
+            <p>Brak kontrolerów w systemie.</p>
+            {% endif %}
         </div>
-        {% endfor %}
-        {% else %}
-        <p>Brak kontrolerów w systemie.</p>
-        {% endif %}
-    </div>
+        <script src="{{ url_for(endpoint='.static', filename='alerts.js') }}"></script>
+        <script>
+            const server_timestamp = Date.parse("{{ current_timestamp }}");
+            var server_time_offset = Date.now() - server_timestamp;
 
-    <script>
-        // Custom Modal Functions
-        function showCustomAlert(message) {
-            return new Promise((resolve) => {
-                const overlay = document.createElement('div');
-                overlay.className = 'custom-modal-overlay';
+            function isTimeOffline(last_seen_controller) {
+                const last_seen = Date.parse(last_seen_controller);
+                const current_time_on_server = Date.now() - server_time_offset;
+                const MAX_DELAY = 1000 * 60 * 1; // 1 minute
 
-                const modal = document.createElement('div');
-                modal.className = 'custom-modal';
-
-                const messageDiv = document.createElement('div');
-                messageDiv.className = 'custom-modal-message';
-                messageDiv.textContent = message;
-
-                const buttonsDiv = document.createElement('div');
-                buttonsDiv.className = 'custom-modal-buttons';
-
-                const okBtn = document.createElement('button');
-                okBtn.className = 'custom-modal-btn';
-                okBtn.textContent = 'OK';
-                okBtn.onclick = () => {
-                    document.body.removeChild(overlay);
-                    resolve();
-                };
-
-                buttonsDiv.appendChild(okBtn);
-                modal.appendChild(messageDiv);
-                modal.appendChild(buttonsDiv);
-                overlay.appendChild(modal);
-                document.body.appendChild(overlay);
-
-                okBtn.focus();
-            });
-        }
-
-        function showCustomConfirm(message) {
-            return new Promise((resolve) => {
-                const overlay = document.createElement('div');
-                overlay.className = 'custom-modal-overlay';
-
-                const modal = document.createElement('div');
-                modal.className = 'custom-modal';
-
-                const messageDiv = document.createElement('div');
-                messageDiv.className = 'custom-modal-message';
-                messageDiv.textContent = message;
-
-                const buttonsDiv = document.createElement('div');
-                buttonsDiv.className = 'custom-modal-buttons';
-
-                const cancelBtn = document.createElement('button');
-                cancelBtn.className = 'custom-modal-btn custom-modal-btn-cancel';
-                cancelBtn.textContent = 'Anuluj';
-                cancelBtn.onclick = () => {
-                    document.body.removeChild(overlay);
-                    resolve(false);
-                };
-
-                const confirmBtn = document.createElement('button');
-                confirmBtn.className = 'custom-modal-btn custom-modal-btn-danger';
-                confirmBtn.textContent = 'Potwierdź';
-                confirmBtn.onclick = () => {
-                    document.body.removeChild(overlay);
-                    resolve(true);
-                };
-
-                buttonsDiv.appendChild(cancelBtn);
-                buttonsDiv.appendChild(confirmBtn);
-                modal.appendChild(messageDiv);
-                modal.appendChild(buttonsDiv);
-                overlay.appendChild(modal);
-                document.body.appendChild(overlay);
-
-                confirmBtn.focus();
-            });
-        }
-
-        function updateControllerName(controllerId) {
-            const nameInput = document.getElementById(`controller_name_${controllerId}`);
-            const newName = nameInput.value.trim();
-
-            if (!newName) {
-                showCustomAlert('Nazwa nie może być pusta');
-                return;
+                return last_seen + MAX_DELAY < current_time_on_server;
             }
 
-            const formData = new FormData();
-            formData.append('controller_id', controllerId);
-            formData.append('name', newName);
+            // Update last seen times for all controllers
+            function updateLastSeenTimes() {
+                const lastSeenElements = document.querySelectorAll(
+                    ".settings-last-seen",
+                );
+                lastSeenElements.forEach((element) => {
+                    const serverTimestamp =
+                        element.getAttribute("data-timestamp");
+                    if (serverTimestamp) {
+                        // Parse the server timestamp and adjust for client time
+                        const serverTime = Date.parse(serverTimestamp);
+                        const clientTime = serverTime + server_time_offset;
 
-            fetch('/update_controller_name', {
-                method: 'POST',
-                body: formData
-            })
-                .then(response => {
-                    if (response.ok) {
-                        showCustomAlert('Nazwa kontrolera zaktualizowana').then(() => location.reload());
-                    } else {
-                        showCustomAlert('Błąd podczas aktualizacji nazwy');
+                        // Format the adjusted time
+                        const date = new Date(clientTime);
+                        const formattedTime = date.toLocaleString("pl-PL", {
+                            year: "numeric",
+                            month: "2-digit",
+                            day: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit",
+                        });
+
+                        element.textContent = `Ostatnia aktywność: ${formattedTime}`;
+
+                        // Check if controller is offline and apply styling
+                        const isOffline = isTimeOffline(serverTimestamp);
+                        const controllerRow =
+                            element.closest(".settings-item-row");
+                        if (controllerRow) {
+                            if (isOffline) {
+                                controllerRow.classList.add("offline");
+                            } else {
+                                controllerRow.classList.remove("offline");
+                            }
+                        }
                     }
-                })
-                .catch(error => {
-                    showCustomAlert('Błąd: ' + error);
                 });
-        }
-
-        async function deleteController(controllerId) {
-            const confirmed = await showCustomConfirm('Czy na pewno chcesz usunąć ten kontroler?');
-            if (!confirmed) {
-                return;
             }
 
-            const formData = new FormData();
-            formData.append('controller_id', controllerId);
+            // Update times on page load
+            updateLastSeenTimes();
 
-            fetch('/delete_controller', {
-                method: 'POST',
-                body: formData
-            })
-                .then(response => {
-                    if (response.ok) {
-                        showCustomAlert('Kontroler usunięty').then(() => location.reload());
-                    } else {
-                        showCustomAlert('Błąd podczas usuwania kontrolera');
-                    }
+            function updateControllerName(controllerId) {
+                const nameInput = document.getElementById(
+                    `controller_name_${controllerId}`,
+                );
+                const newName = nameInput.value.trim();
+
+                if (!newName) {
+                    showCustomAlert("Nazwa nie może być pusta");
+                    return;
+                }
+
+                if (newName.length > 40) {
+                    showCustomAlert("Nazwa może mieć maksymalnie 40 znaków");
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append("controller_id", controllerId);
+                formData.append("name", newName);
+
+                fetch("/update_controller_name", {
+                    method: "POST",
+                    body: formData,
                 })
-                .catch(error => {
-                    showCustomAlert('Błąd: ' + error);
-                });
-        }
+                    .then((response) => {
+                        if (response.ok) {
+                            showCustomAlert(
+                                "Nazwa kontrolera zaktualizowana",
+                            ).then(() => location.reload());
+                        } else {
+                            showCustomAlert("Błąd podczas aktualizacji nazwy");
+                        }
+                    })
+                    .catch((error) => {
+                        showCustomAlert("Błąd: " + error);
+                    });
+            }
 
-        function updateUsername() {
-            const nameInput = document.getElementById('device_name');
-            const newName = nameInput.value.trim();
+            async function deleteController(controllerId) {
+                const confirmed = await showCustomConfirm(
+                    "Czy na pewno chcesz usunąć ten kontroler?",
+                );
+                if (!confirmed) {
+                    return;
+                }
 
-            const formData = new FormData();
-            formData.append('username', newName);
+                const formData = new FormData();
+                formData.append("controller_id", controllerId);
 
-            fetch('/update_username', {
-                method: 'POST',
-                body: formData
-            })
-                .then(response => {
-                    if (response.ok) {
-                        showCustomAlert('Nazwa urządzenia zaktualizowana').then(() => location.reload());
-                    } else {
-                        showCustomAlert('Błąd podczas aktualizacji nazwy');
-                    }
+                fetch("/delete_controller", {
+                    method: "POST",
+                    body: formData,
                 })
-                .catch(error => {
-                    showCustomAlert('Błąd: ' + error);
-                });
-        }
-    </script>
-</body>
+                    .then((response) => {
+                        if (response.ok) {
+                            showCustomAlert("Kontroler usunięty").then(() =>
+                                location.reload(),
+                            );
+                        } else {
+                            showCustomAlert("Błąd podczas usuwania kontrolera");
+                        }
+                    })
+                    .catch((error) => {
+                        showCustomAlert("Błąd: " + error);
+                    });
+            }
 
+            function updateUsername() {
+                const nameInput = document.getElementById("device_name");
+                const newName = nameInput.value.trim();
+
+                if (newName.length > 40) {
+                    showCustomAlert("Nazwa może mieć maksymalnie 40 znaków");
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append("username", newName);
+
+                fetch("/update_username", {
+                    method: "POST",
+                    body: formData,
+                })
+                    .then((response) => {
+                        if (response.ok) {
+                            showCustomAlert(
+                                "Nazwa urządzenia zaktualizowana",
+                            ).then(() => location.reload());
+                        } else {
+                            showCustomAlert("Błąd podczas aktualizacji nazwy");
+                        }
+                    })
+                    .catch((error) => {
+                        showCustomAlert("Błąd: " + error);
+                    });
+            }
+        </script>
+    </body>
 </html>

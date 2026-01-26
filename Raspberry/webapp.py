@@ -75,27 +75,38 @@ def index():
     visitor_ip = request.remote_addr
     current_user = get_user_by_ip(visitor_ip)
     user_username = current_user['username'] if current_user else None
+    current_timestamp = None
+    
+    conn = get_db_connection()
+    timestamp_query = "SELECT CURRENT_TIMESTAMP as current_time"
+    current_timestamp = conn.execute(timestamp_query).fetchone()['current_time']
+    conn.close()
     
     return render_template('index.html', 
+                           current_timestamp=current_timestamp,
                            user_username=user_username)
 
 @app.route('/settings')
 def settings():
     visitor_ip = request.remote_addr
     current_user = get_user_by_ip(visitor_ip)
+    # current_timestamp = sqlite3.datetime.datetime.now()
 
     conn = get_db_connection()
     
     controllers_query = '''
-        SELECT controller_id, name
+        SELECT controller_id, name, last_seen
         FROM controllers
     '''
+
+    timestamp_query = "SELECT CURRENT_TIMESTAMP as current_time"
     all_controllers = conn.execute(controllers_query).fetchall()
-    
+    current_timestamp = conn.execute(timestamp_query).fetchone()['current_time']
     conn.close()
     
     return render_template('settings.html',
                            current_user=current_user,
+                           current_timestamp=current_timestamp,
                            controllers=all_controllers)
 
 @app.route('/refresh_controllers', methods=['GET'])
@@ -175,7 +186,7 @@ def update_username():
           example: "Access Denied: Your IP is not recognized."
     """
     visitor_ip = request.remote_addr
-    new_name = request.form.get('username')
+    new_name = request.form.get('username').strip()
     user_record = get_user_by_ip(visitor_ip)
     
     if not user_record:

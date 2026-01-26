@@ -1,6 +1,6 @@
 @font-face {
-    font-family: 'Roboto Mono';
-    src: url('Roboto-Mono-regular.woff2') format('woff2');
+    font-family: "Roboto Mono";
+    src: url("Roboto-Mono-regular.woff2") format("woff2");
     font-weight: normal;
     font-style: normal;
 }
@@ -12,16 +12,16 @@
     --primary: #ff4c29;
     --secondary: #281b19;
     --accent: #e02b2b;
-    --blue: #0F5C6B;
+    --blue: #0f5c6b;
 
     font-family: Inter, sans-serif;
-
 }
 
 body {
     background: var(--background);
     color: var(--text);
     padding-inline: 0.4rem;
+    padding-bottom: 5rem;
 
     max-width: 412px;
     margin: auto;
@@ -34,7 +34,8 @@ nav {
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    width: 100%;
+    width: calc(100% - 2rem);
+    padding-inline: 1rem;
 
     border-bottom: 0.2em solid var(--secondary);
 
@@ -64,8 +65,6 @@ a {
     text-decoration: none;
     color: var(--text);
 }
-
-
 
 /* ----------------------------
 MARK: Controller cards 
@@ -139,7 +138,7 @@ MARK: Controller cards
 
     a {
         text-decoration: underline;
-        color: var(--primary)
+        color: var(--primary);
     }
 }
 
@@ -168,7 +167,12 @@ MARK: Controller cards
     outline: 0.2em solid var(--vortex-darker);
     outline-offset: 0.1em;
 
-    transition: opacity 0.4s, outline-color 0.2s, --vortex-main 0.5s, --vortex-accent 0.5s, outline-color 0.2s;
+    transition:
+        opacity 0.4s,
+        outline-color 0.2s,
+        --vortex-main 0.5s,
+        --vortex-accent 0.5s,
+        outline-color 0.2s;
 
     opacity: 1;
 
@@ -176,7 +180,27 @@ MARK: Controller cards
         opacity: 0;
     }
 }
+.controller-card.offline, .controller-details.offline{
+    opacity: 0.6;
+    pointer-events: none;
 
+    --vortex-main: var(--accent);
+}
+
+.controller-details.stable.offline::before{
+    content: "Offline";
+}
+
+.controller-card.offline::after {
+    content: "Offline";
+    color: var(--accent);
+    font-size: 1.2rem;
+    font-family: Inter, sans-serif;
+    font-weight: bold;
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+}
 
 .controller-name {
     display: block;
@@ -189,7 +213,7 @@ MARK: Controller cards
 .controller-card-temp {
     display: flex;
     justify-content: space-between;
-    padding-block: .5em;
+    padding-block: 0.5em;
     position: relative;
     z-index: 1;
 
@@ -201,7 +225,7 @@ MARK: Controller cards
 
         strong {
             font-size: 2.2em;
-            font-family: 'Roboto Mono', 'Courier New', Courier, monospace;
+            font-family: "Roboto Mono", "Courier New", Courier, monospace;
             font-weight: 900;
         }
     }
@@ -276,7 +300,6 @@ MARK: Controller cards
     }
 }
 
-
 .heating {
     --vortex-main: var(--primary);
     --vortex-accent: var(--accent);
@@ -307,11 +330,19 @@ MARK: Controller cards
 .stable,
 .heating,
 .cooling {
-    --vortex-darker: color-mix(in srgb, var(--vortex-main) 10%, var(--secondary));
+    --vortex-darker: color-mix(
+        in srgb,
+        var(--vortex-main) 20%,
+        var(--secondary)
+    );
 }
 
 .controller-card {
-    background: linear-gradient(15deg, var(--vortex-main) -100%, var(--background));
+    background: linear-gradient(
+        15deg,
+        var(--vortex-main) -100%,
+        var(--background)
+    );
 }
 
 .card-vortex {
@@ -331,7 +362,6 @@ MARK: Controller cards
     opacity: 0.5;
 }
 
-
 /* ----------------------------
 MARK: Controller details 
 ---------------------------- */
@@ -344,7 +374,11 @@ MARK: Controller details
 .controller-details {
     position: relative;
     /* background-color: var(--background); */
-    background: linear-gradient(15deg, var(--vortex-main) -100%, var(--background));
+    background: linear-gradient(
+        15deg,
+        var(--vortex-main) -100%,
+        var(--background)
+    );
 
     padding: 1.5rem;
     padding-inline: 1rem;
@@ -353,7 +387,12 @@ MARK: Controller details
 
     outline: 0.2em solid var(--vortex-darker);
     outline-offset: 0.1em;
-    transition: --vortex-main 0.5s, --vortex-accent 0.5s, outline-color 0.2s, opacity 0.4s 0.1s, display 0.6s;
+    transition:
+        --vortex-main 0.5s,
+        --vortex-accent 0.5s,
+        outline-color 0.2s,
+        opacity 0.4s 0.1s,
+        display 0.6s;
     transition-behavior: allow-discrete;
 
     opacity: 1;
@@ -410,8 +449,9 @@ MARK: Controller details
     gap: 1rem;
     margin-bottom: 1rem;
 
-    &>.temp-box:nth-child(2) {
+    & > .temp-box:nth-child(2) {
         grid-row: span 2;
+        text-align: center;
     }
 }
 
@@ -435,7 +475,7 @@ MARK: Controller details
 }
 
 .temp-box .temp-box-value {
-    font-family: 'Roboto Mono', 'Courier New', Courier, monospace;
+    font-family: "Roboto Mono", "Courier New", Courier, monospace;
 }
 
 /* .status-box {
@@ -506,8 +546,20 @@ MARK: Controller details
     overflow: hidden;
     position: relative;
     width: 100%;
-    mask-image: linear-gradient(to bottom, transparent, black calc(var(--option-height) * 1), black calc(var(--option-height) * 2), transparent);
-    -webkit-mask-image: linear-gradient(to bottom, transparent, black calc(var(--option-height) * 1), black calc(var(--option-height) * 2), transparent);
+    mask-image: linear-gradient(
+        to bottom,
+        transparent,
+        black calc(var(--option-height) * 1),
+        black calc(var(--option-height) * 2),
+        transparent
+    );
+    -webkit-mask-image: linear-gradient(
+        to bottom,
+        transparent,
+        black calc(var(--option-height) * 1),
+        black calc(var(--option-height) * 2),
+        transparent
+    );
 }
 
 .picker-carousel {
@@ -515,7 +567,7 @@ MARK: Controller details
     flex-direction: column;
     transition: transform 0.3s ease;
     padding-top: var(--option-height);
-    font-family: 'Roboto Mono', 'Courier New', Courier, monospace;
+    font-family: "Roboto Mono", "Courier New", Courier, monospace;
 }
 
 .picker-option {
@@ -526,7 +578,9 @@ MARK: Controller details
     font-size: 1em;
     color: var(--text);
     opacity: 0.3;
-    transition: opacity 0.2s, font-size 0.2s;
+    transition:
+        opacity 0.2s,
+        font-size 0.2s;
     user-select: none;
 }
 
@@ -547,12 +601,14 @@ MARK: Controller details
     user-select: none;
     opacity: 0.7;
 
-    transition: opacity 0.2s, color 0.2s, transform 0.1s;
+    transition:
+        opacity 0.2s,
+        color 0.2s,
+        transform 0.1s;
 
     &:hover {
         opacity: 1;
     }
-
 
     &.disabled {
         opacity: 0.1;
@@ -562,7 +618,6 @@ MARK: Controller details
     }
 }
 
-
 .picker-arrow:active {
     transform: scale(0.9);
 }
@@ -571,6 +626,14 @@ MARK: Controller details
     font-size: 0.9rem;
     margin-bottom: 0.5rem;
     opacity: 0.9;
+
+    span {
+        display: block;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        max-width: calc(var(--screen-width) * 0.3);
+    }
 }
 
 .section-title {
@@ -623,15 +686,15 @@ MARK: Controller details
     border-radius: 50%;
 }
 
-input:checked+.slider {
+input:checked + .slider {
     background-color: var(--vortex-main);
 }
 
-input:checked+.slider:before {
+input:checked + .slider:before {
     transform: translateX(120%);
 }
 
-input:disabled+.slider {
+input:disabled + .slider {
     opacity: 0.5;
     cursor: not-allowed;
 }
@@ -653,16 +716,15 @@ input:disabled+.slider {
     .temp-picker-container {
         font-size: 1.5em;
         --option-height: 40px;
-
     }
 }
 
-.controller-details:has(input[type="checkbox"]:not(:checked)) .comfort-temp-control {
+.controller-details:has(input[type="checkbox"]:not(:checked))
+    .comfort-temp-control {
     opacity: 0.5;
     pointer-events: none;
     user-select: none;
 }
-
 
 .comfort-temp-label {
     font-size: 1rem;
@@ -728,8 +790,6 @@ input[type="number"]:disabled {
     height: 48px;
     opacity: 0.3;
 }
-
-
 
 /* ----------------------------
 MARK: Icons 
