@@ -1,81 +1,93 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>System Ogrzewania</title>
+        <link
+            rel="stylesheet"
+            href="{{ url_for(endpoint='.static', filename='style.css') }}"
+        />
+        <link
+            rel="stylesheet"
+            href="{{ url_for(endpoint='.static', filename='alerts.css') }}"
+        />
+        <meta name="theme-color" content="#1c1818" />
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>System Ogrzewania</title>
-    <link rel="stylesheet" href="{{ url_for(endpoint='.static', filename='style.css') }}">
-    <meta name="theme-color" content="#1c1818" />
-
-    <style>
-        @view-transition {
-            navigation: auto;
-        }
-
-        /* custom mpa animation */
-        @keyframes move-out {
-            from {
-                transform: translateY(0%);
-                opacity: 1;
+        <style>
+            @view-transition {
+                navigation: auto;
             }
 
-            to {
-                transform: translateY(-10%);
-                opacity: 0;
+            /* custom mpa animation */
+            @keyframes move-out {
+                from {
+                    transform: translateY(0%);
+                    opacity: 1;
+                }
+
+                to {
+                    transform: translateY(-10%);
+                    opacity: 0;
+                }
             }
-        }
 
-        @keyframes move-in {
-            from {
-                transform: translateY(10%);
-                opacity: 0;
+            @keyframes move-in {
+                from {
+                    transform: translateY(10%);
+                    opacity: 0;
+                }
+
+                to {
+                    transform: translateY(0%);
+                    opacity: 1;
+                }
             }
 
-            to {
-                transform: translateY(0%);
-                opacity: 1;
+            ::view-transition-old(root) {
+                animation: 0.2s ease-in both move-out;
             }
-        }
 
-        ::view-transition-old(root) {
-            animation: 0.2s ease-in both move-out;
-        }
+            ::view-transition-new(root) {
+                animation: 0.2s ease-in both move-in;
+            }
+        </style>
+    </head>
 
-        ::view-transition-new(root) {
-            animation: 0.2s ease-in both move-in;
-        }
-    </style>
-</head>
+    <body>
+        <nav>
+            <p class="app-title">
+                <span class="mdi--hot-cold"></span>System Ogrzewania
+            </p>
+            <a class="mdi--gear" href="/settings"></a>
+        </nav>
+        {% if user_username %}
+        <h1>Witaj w domu, {{ user_username }}</h1>
+        {% endif %}
 
-<body>
+        <div class="controller-row" id="controller-row"></div>
 
-    <nav>
-        <p class="app-title"><span class="mdi--hot-cold"></span>System Ogrzewania</p>
-        <a class="mdi--gear" href="/settings"></a>
-    </nav>
-    {% if user_username %}
-    <h1>
-        Witaj w domu, {{ user_username }}
-    </h1>
-    {% endif %}
+        <div class="controller-grid" id="controller-grid"></div>
 
-    <div class="controller-row" id="controller-row"></div>
-
-    <div class="controller-grid" id="controller-grid"></div>
-
-    <script src="{{ url_for(endpoint='.static', filename='dashboard.js') }}"></script>
-
-</body>
-
-<script>
-    // Enable horizontal scrolling with mouse wheel on controller-row
-    if (controllerRow) {
-        controllerRow.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            controllerRow.scrollLeft += e.deltaY;
-        });
-    }
-</script>
-
+        <script>
+            {% if user_username %}
+            var myusername = "{{ user_username }}";
+            {% else %}
+            var myusername = "Ty";
+            {% endif %}
+            const server_timestamp = Date.parse("{{ current_timestamp }}");
+            var server_time_offset = Date.now() - server_timestamp;
+        </script>
+        <script src="{{ url_for(endpoint='.static', filename='dashboard.js') }}"></script>
+        <script src="{{ url_for(endpoint='.static', filename='alerts.js') }}"></script>
+        <script>
+            // Enable horizontal scrolling with mouse wheel on controller-row
+            if (controllerRow) {
+                controllerRow.addEventListener("wheel", (e) => {
+                    e.preventDefault();
+                    controllerRow.scrollLeft += e.deltaY;
+                });
+            }
+        </script>
+    </body>
 </html>

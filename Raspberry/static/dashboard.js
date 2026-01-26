@@ -4,6 +4,20 @@ const controllerRow = document.getElementById('controller-row');
 
 let selectedControllerId = null;
 
+// Track pending client-side overrides to avoid refresh flicker
+const pendingManualTargets = {}; // { [controllerId]: { value: number, updatedAt: number } }
+const pendingPrefTemps = {};     // reserved for future use
+const PENDING_TTL_MS = 3000;     // keep overrides for a short time
+const SIMULATED_FETCH_DELAY_MS = 800; // artificial latency for testing
+
+function isTimeOffline(last_seen_controller) {
+    const last_seen = Date.parse(last_seen_controller);
+    const current_time_on_server = Date.now() - server_time_offset
+    const MAX_DELAY = 1000 * 60 * 1; // 1 minute
+
+    return last_seen + MAX_DELAY < current_time_on_server
+}
+
 function getStatusClass(c) {
     if (c.target_temp > c.curr_temp) return 'heating';
     if (c.target_temp < c.curr_temp) return 'cooling';
@@ -16,8 +30,8 @@ const statusToDesc = {
     'stable': 'Stabilna'
 }
 
-function getStatusInfo(priority) {
-    if (priority == 2) return { className: 'status-locked', text: 'Ręcznie' };
+function getStatusInfo(priority, user = "") {
+    if (priority == 2) return { className: 'status-locked', text: `${user}` };
     if (priority == 1) return { className: 'status-auto', text: 'AutoTemp' };
     return { className: 'status-default', text: 'System' };
 }
@@ -89,7 +103,7 @@ function createTemperaturePicker(controllerId, carouselId, onUpClick, onDownClic
     // Up arrow
     const upArrow = document.createElement('div');
     upArrow.className = 'picker-arrow picker-arrow-up';
-    upArrow.textContent = '🢑';
+    upArrow.textContent = '▲';
     upArrow.onclick = onUpClick;
 
     // Carousel wrapper
@@ -113,7 +127,7 @@ function createTemperaturePicker(controllerId, carouselId, onUpClick, onDownClic
     // Down arrow
     const downArrow = document.createElement('div');
     downArrow.className = 'picker-arrow picker-arrow-down';
-    downArrow.textContent = '🢓';
+    downArrow.textContent = '▼';
     downArrow.onclick = onDownClick;
 
     pickerContainer.appendChild(upArrow);
@@ -166,7 +180,6 @@ function createOrUpdateControllerCard(c) {
         const vortexDiv = document.createElement('div');
         vortexDiv.className = 'card-vortex';
         vortexDiv.innerHTML = createVortexSVG(c.controller_id);
-
         card.appendChild(nameSpan);
         card.appendChild(tempDiv);
         card.appendChild(infoDiv);
@@ -182,6 +195,9 @@ function createOrUpdateControllerCard(c) {
         card.classList.add('active');
     }
 
+    const is_offline = isTimeOffline(c.last_seen)
+    if (is_offline) card.className = "controller-card offline stable"
+
     const nameSpan = card.querySelector('.controller-name');
     nameSpan.textContent = c.name;
 
@@ -191,7 +207,7 @@ function createOrUpdateControllerCard(c) {
         temps[1].textContent = `${parseFloat(c.target_temp).toFixed(1)}°C`;
     }
 
-    const statusInfo = getStatusInfo(c.priority);
+    const statusInfo = getStatusInfo(c.priority, c.locked_by_name != "" ? c.locked_by_name : c.set_by);
     const statusSpan = card.querySelector('.info-small span');
     statusSpan.className = statusInfo.className;
     statusSpan.textContent = statusInfo.text;
@@ -255,7 +271,7 @@ function createOrUpdateControllerDetails(c) {
         statusLine1.className = 'status-line status-text temp-box-value';
         const statusLine2 = document.createElement('div');
         statusLine2.className = 'temp-box-label';
-        statusLine2.textContent = 'Ostatnia zmiana';
+        statusLine2.textContent = 'Zmienione przez';
         statusLine2.id = `last-change-${c.controller_id}`;
 
         statusBox.appendChild(statusLine2);
@@ -323,6 +339,9 @@ function createOrUpdateControllerDetails(c) {
     const statusClass = getStatusClass(c);
     details.className = `controller-details ${statusClass}`;
 
+    const is_offline = isTimeOffline(c.last_seen)
+    if (is_offline) details.className = "controller-details offline stable"
+
     const h2 = details.querySelector('h2');
     h2.textContent = c.name;
 
@@ -337,7 +356,7 @@ function createOrUpdateControllerDetails(c) {
         updatePickerArrowsVisibility(`picker-carousel-${c.controller_id}`, c.target_temp);
     }
 
-    const statusInfo = getStatusInfo(c.priority);
+    const statusInfo = getStatusInfo(c.priority, c.locked_by_name != "" ? c.locked_by_name : c.set_by);
     const statusTextSpan = details.querySelector('.status-text span');
     if (statusTextSpan) {
         statusTextSpan.className = statusInfo.className;
@@ -486,7 +505,7 @@ async function adjustTemp(controllerId, delta) {
 
     // Validate temperature range
     if (newTemp < 15 || newTemp > 40) {
-        alert('Temperatura musi być w zakresie 15-40°C');
+        showCustomAlert('Temperatura musi być w zakresie 15-40°C');
         return;
     }
 
@@ -495,6 +514,9 @@ async function adjustTemp(controllerId, delta) {
         updatePickerPosition(carousel, newTemp);
         updatePickerArrowsVisibility(`picker-carousel-${controllerId}`, newTemp);
     }
+
+    // Mark a pending override so auto-refresh won't revert immediately
+    pendingManualTargets[controllerId] = { value: newTemp, updatedAt: Date.now() };
 
     // Update card temperature and status
     const card = document.getElementById(`card-${controllerId}`);
@@ -522,7 +544,7 @@ async function adjustTemp(controllerId, delta) {
         }
 
         // Update status info - manual change means priority 2
-        const statusInfo = getStatusInfo(2);
+        const statusInfo = getStatusInfo(2, myusername);
         const statusSpan = card.querySelector('.info-small span');
         if (statusSpan) {
             statusSpan.className = statusInfo.className;
@@ -535,7 +557,7 @@ async function adjustTemp(controllerId, delta) {
     if (details) {
         // Get current temp to determine new status
         const currTempEl = document.getElementById(`curr-temp-${controllerId}`);
-        const currTemp = currTempEl ? parseFloat(currTempEl.textContent) : parseFloat(c.curr_temp);
+        const currTemp = currTempEl ? parseFloat(currTempEl.textContent) : 21.5;
 
         // Update details status class
         details.className = 'controller-details';
@@ -547,7 +569,7 @@ async function adjustTemp(controllerId, delta) {
             details.classList.add('stable');
         }
 
-        const statusInfo = getStatusInfo(2);
+        const statusInfo = getStatusInfo(2, myusername);
         const statusTextSpan = details.querySelector('.status-text span');
         if (statusTextSpan) {
             statusTextSpan.className = statusInfo.className;
@@ -565,6 +587,9 @@ async function adjustTemp(controllerId, delta) {
     }
 
     try {
+        if (SIMULATED_FETCH_DELAY_MS > 0) {
+            await sleep(SIMULATED_FETCH_DELAY_MS);
+        }
         const response = await fetch('/set_manual_temp', {
             method: 'POST',
             headers: {
@@ -578,7 +603,7 @@ async function adjustTemp(controllerId, delta) {
 
         const result = await response.json();
         if (!result.success) {
-            alert(result.message);
+            showCustomAlert(result.message);
             // Revert UI on error
             if (carousel) {
                 updatePickerPosition(carousel, currentTemp);
@@ -604,6 +629,7 @@ async function adjustTemp(controllerId, delta) {
                     card.classList.add('active');
                 }
             }
+            delete pendingManualTargets[controllerId];
         }
     } catch (error) {
         console.error('Error adjusting temperature:', error);
@@ -632,6 +658,7 @@ async function adjustTemp(controllerId, delta) {
                 card.classList.add('active');
             }
         }
+        delete pendingManualTargets[controllerId];
     }
 }
 
@@ -644,7 +671,7 @@ async function adjustPref(controllerId, delta) {
 
     // Validate temperature range
     if (newPref < 15 || newPref > 40) {
-        alert('Temperatura musi być w zakresie 15-40°C');
+        showCustomAlert('Temperatura musi być w zakresie 15-40°C');
         return;
     }
 
@@ -668,7 +695,7 @@ async function adjustPref(controllerId, delta) {
 
         const result = await response.json();
         if (!result.success) {
-            alert(result.message);
+            showCustomAlert(result.message);
             // Revert UI on error
             if (prefCarousel) {
                 updatePickerPosition(prefCarousel, currentPref);
@@ -700,7 +727,7 @@ async function toggleAutoTemp(controllerId, isEnabled, currentTemp) {
 
         const result = await response.json();
         if (!result.success) {
-            alert(result.message);
+            showCustomAlert(result.message);
             // Revert checkbox on error
             const checkbox = document.getElementById(`autotemp-${controllerId}`);
             if (checkbox) {
@@ -729,6 +756,20 @@ async function refreshControllers(isInitialLoad = false) {
         controllers.forEach(c => {
             createOrUpdateControllerCard(c);
             createOrUpdateControllerDetails(c);
+
+            // Apply client-side override if present and still fresh
+            const override = pendingManualTargets[c.controller_id];
+            if (override) {
+                const isFresh = Date.now() - override.updatedAt < PENDING_TTL_MS;
+                if (isFresh && Math.abs(override.value - parseFloat(c.target_temp)) > 0.0001) {
+                    applyManualOverride(c.controller_id, override.value);
+                } else {
+                    // If backend caught up or override expired, drop it
+                    if (!isFresh || Math.abs(override.value - parseFloat(c.target_temp)) <= 0.0001) {
+                        delete pendingManualTargets[c.controller_id];
+                    }
+                }
+            }
         });
 
         // On initial load, ensure first controller is selected
@@ -736,6 +777,7 @@ async function refreshControllers(isInitialLoad = false) {
             selectController(controllers[0].controller_id);
         }
     } catch (error) {
+        showCustomAlert("Błąd połączenia z serwerem.")
         console.error('Error refreshing controllers:', error);
     }
 }
@@ -748,3 +790,81 @@ window.addEventListener("DOMContentLoaded", async function () {
     // Auto-refresh every 2 seconds
     setInterval(() => refreshControllers(false), 2000);
 });
+
+// Small helper for simulating latency
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Helper: apply manual override to UI elements for a controller
+function applyManualOverride(controllerId, overrideTemp) {
+    // Update picker and arrows in details
+    const carousel = document.getElementById(`picker-carousel-${controllerId}`);
+    if (carousel) {
+        updatePickerPosition(carousel, overrideTemp);
+        updatePickerArrowsVisibility(`picker-carousel-${controllerId}`, overrideTemp);
+    }
+
+    // Update card
+    const card = document.getElementById(`card-${controllerId}`);
+    if (card) {
+        const cardTargetTemp = card.querySelectorAll('.controller-card-temp strong')[1];
+        if (cardTargetTemp) {
+            cardTargetTemp.textContent = `${overrideTemp.toFixed(1)}°C`;
+        }
+
+        const cardCurrTempStrong = card.querySelectorAll('.controller-card-temp strong')[0];
+        const currTemp = cardCurrTempStrong ? parseFloat(cardCurrTempStrong.textContent) : 21.5;
+
+        card.className = 'controller-card';
+        if (overrideTemp > currTemp) {
+            card.classList.add('heating');
+        } else if (overrideTemp < currTemp) {
+            card.classList.add('cooling');
+        } else {
+            card.classList.add('stable');
+        }
+        if (selectedControllerId === controllerId) {
+            card.classList.add('active');
+        }
+
+        const statusInfo = getStatusInfo(2, myusername);
+        const statusSpan = card.querySelector('.info-small span');
+        if (statusSpan) {
+            statusSpan.className = statusInfo.className;
+            statusSpan.textContent = statusInfo.text;
+        }
+    }
+
+    // Update details status class & text
+    const details = document.getElementById(`controller-${controllerId}`);
+    if (details) {
+        const currTempEl = document.getElementById(`curr-temp-${controllerId}`);
+        const currTemp = currTempEl ? parseFloat(currTempEl.textContent) : 21.5;
+
+        details.className = 'controller-details';
+        if (overrideTemp > currTemp) {
+            details.classList.add('heating');
+        } else if (overrideTemp < currTemp) {
+            details.classList.add('cooling');
+        } else {
+            details.classList.add('stable');
+        }
+
+        const statusInfo = getStatusInfo(2, myusername);
+        const statusTextSpan = details.querySelector('.status-text span');
+        if (statusTextSpan) {
+            statusTextSpan.className = statusInfo.className;
+            statusTextSpan.textContent = statusInfo.text;
+        } else {
+            const statusText = details.querySelector('.status-text');
+            if (statusText) {
+                statusText.textContent = '';
+                const span = document.createElement('span');
+                span.className = statusInfo.className;
+                span.textContent = statusInfo.text;
+                statusText.appendChild(span);
+            }
+        }
+    }
+}
