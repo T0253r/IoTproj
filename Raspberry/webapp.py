@@ -74,29 +74,9 @@ def index():
     """
     visitor_ip = request.remote_addr
     current_user = get_user_by_ip(visitor_ip)
-    user_mac = current_user['mac'] if current_user else None
     user_username = current_user['username'] if current_user else None
-
-    conn = get_db_connection()
-    
-    controllers_query = '''
-        SELECT 
-            c.*, 
-            p.temp as user_pref_temp,
-            d.username as locked_by_name
-        FROM controllers c
-        LEFT JOIN preferences p 
-            ON c.controller_id = p.fk_controller_id 
-            AND p.fk_user_mac = ?
-        LEFT JOIN devices d
-            ON c.set_by = d.mac
-    '''
-    all_controllers = conn.execute(controllers_query, (user_mac,)).fetchall()
-    
-    conn.close()
     
     return render_template('index.html', 
-                           controllers=all_controllers,
                            user_username=user_username)
 
 @app.route('/settings')
@@ -117,6 +97,60 @@ def settings():
     return render_template('settings.html',
                            current_user=current_user,
                            controllers=all_controllers)
+
+@app.route('/refresh_controllers', methods=['GET'])
+def refresh_controllers():
+    """
+    Refresh the list of controllers
+    ---
+    tags:
+      - Web Interface
+    responses:
+        200:
+            description: Returns updated controllers list
+            schema:
+            type: array
+            items:
+                type: object
+                properties:
+                controller_id:
+                    type: integer
+                name:
+                    type: string
+                target_temp:
+                    type: number
+                curr_temp:
+                    type: number
+                user_pref_temp:
+                    type: number
+                locked_by_name:
+                    type: string
+        """    
+    visitor_ip = request.remote_addr
+    current_user = get_user_by_ip(visitor_ip)
+    user_mac = current_user['mac'] if current_user else None
+
+    conn = get_db_connection()
+    
+    controllers_query = '''
+        SELECT 
+            c.*, 
+            p.temp as user_pref_temp,
+            d.username as locked_by_name
+        FROM controllers c
+        LEFT JOIN preferences p 
+            ON c.controller_id = p.fk_controller_id 
+            AND p.fk_user_mac = ?
+        LEFT JOIN devices d
+            ON c.set_by = d.mac
+    '''
+    all_controllers = conn.execute(controllers_query, (user_mac,)).fetchall()
+    
+    conn.close()
+    
+    controllers_list = [dict(controller) for controller in all_controllers]
+    
+    return jsonify(controllers_list)
 
 @app.route('/update_username', methods=['POST'])
 def update_username():
@@ -162,31 +196,47 @@ def set_manual_temp():
       - Temperature Control
     parameters:
       - name: controller_id
-        in: formData
-        type: integer
-        required: true
-        description: ID of the controller to update
-      - name: target_temp
-        in: formData
-        type: number
-        required: true
-        description: Target temperature to set
+        in: body
+        schema:
+          type: object
+          required:
+            - controller_id
+            - target_temp
+          properties:
+            controller_id:
+              type: integer
+              description: ID of the controller to update
+            target_temp:
+              type: number
+              description: Target temperature to set
     responses:
-      302:
-        description: Redirects to home page after setting temperature
+      200:
+        description: Temperature updated successfully
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            message:
+              type: string
       403:
         description: Access denied - user not authenticated
         schema:
-          type: string
-          example: "Access Denied"
+          type: object
+          properties:
+            success:
+              type: boolean
+            message:
+              type: string
     """
     visitor_ip = request.remote_addr
-    controller_id = request.form.get('controller_id')
-    target_temp = request.form.get('target_temp')
+    data = request.get_json()
+    controller_id = data.get('controller_id')
+    target_temp = data.get('target_temp')
 
     user_record = get_user_by_ip(visitor_ip)
     if not user_record:
-        return "Access Denied", 403
+        return jsonify({"success": False, "message": "Access Denied"}), 403
 
     conn = get_db_connection()
     conn.execute('''
@@ -197,7 +247,7 @@ def set_manual_temp():
     
     conn.commit()
     conn.close()
-    return redirect(url_for('index'))
+    return jsonify({"success": True, "message": "Temperature updated"})
 
 @app.route('/set_preference', methods=['POST'])
 def set_preference():
@@ -207,32 +257,48 @@ def set_preference():
     tags:
       - Temperature Control
     parameters:
-      - name: controller_id
-        in: formData
-        type: integer
-        required: true
-        description: ID of the controller to set preference for
-      - name: pref_temp
-        in: formData
-        type: number
-        required: true
-        description: Preferred temperature to set
+      - name: body
+        in: body
+        schema:
+          type: object
+          required:
+            - controller_id
+            - pref_temp
+          properties:
+            controller_id:
+              type: integer
+              description: ID of the controller to set preference for
+            pref_temp:
+              type: number
+              description: Preferred temperature to set
     responses:
-      302:
-        description: Redirects to home page after setting preference
+      200:
+        description: Preference updated successfully
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            message:
+              type: string
       403:
         description: Access denied - user not authenticated
         schema:
-          type: string
-          example: "Access Denied"
+          type: object
+          properties:
+            success:
+              type: boolean
+            message:
+              type: string
     """
     visitor_ip = request.remote_addr
-    controller_id = request.form.get('controller_id')
-    pref_temp = request.form.get('pref_temp')
+    data = request.get_json()
+    controller_id = data.get('controller_id')
+    pref_temp = data.get('pref_temp')
 
     user_record = get_user_by_ip(visitor_ip)
     if not user_record:
-        return "Access Denied", 403
+        return jsonify({"success": False, "message": "Access Denied"}), 403
 
     conn = get_db_connection()
     conn.execute('''
@@ -242,7 +308,7 @@ def set_preference():
     
     conn.commit()
     conn.close()
-    return redirect(url_for('index'))
+    return jsonify({"success": True, "message": "Preference updated"})
 
 @app.route('/clear_preference', methods=['POST'])
 def clear_preference():
@@ -252,26 +318,43 @@ def clear_preference():
     tags:
       - Temperature Control
     parameters:
-      - name: controller_id
-        in: formData
-        type: integer
-        required: true
-        description: ID of the controller to clear preference for
+      - name: body
+        in: body
+        schema:
+          type: object
+          required:
+            - controller_id
+          properties:
+            controller_id:
+              type: integer
+              description: ID of the controller to clear preference for
     responses:
-      302:
-        description: Redirects to home page after clearing preference
+      200:
+        description: Preference cleared successfully
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            message:
+              type: string
       403:
         description: Access denied - user not authenticated
         schema:
-          type: string
-          example: "Access denied"
+          type: object
+          properties:
+            success:
+              type: boolean
+            message:
+              type: string
     """
     visitor_ip = request.remote_addr
-    controller_id = request.form.get('controller_id')
+    data = request.get_json()
+    controller_id = data.get('controller_id')
 
     user_record = get_user_by_ip(visitor_ip)
     if not user_record:
-        return "Access denied", 403
+        return jsonify({"success": False, "message": "Access Denied"}), 403
     
     conn = get_db_connection()
     conn.execute('''
@@ -281,7 +364,7 @@ def clear_preference():
 
     conn.commit()
     conn.close()
-    return redirect(url_for('index'))
+    return jsonify({"success": True, "message": "Preference cleared"})
 
 @app.route('/delete_controller', methods=['POST'])
 def delete_controller():
