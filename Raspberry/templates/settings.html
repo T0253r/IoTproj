@@ -7,6 +7,43 @@
     <title>Ustawienia Systemu</title>
     <link rel="stylesheet" href="{{ url_for(endpoint='.static', filename='style.css') }}">
     <style>
+        @view-transition {
+            navigation: auto;
+        }
+
+        /* custom mpa animation */
+        @keyframes move-out {
+            from {
+                transform: translateY(0%);
+                opacity: 1;
+            }
+
+            to {
+                transform: translateY(-10%);
+                opacity: 0;
+            }
+        }
+
+        @keyframes move-in {
+            from {
+                transform: translateY(10%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0%);
+                opacity: 1;
+            }
+        }
+
+        ::view-transition-old(root) {
+            animation: 0.2s ease-in both move-out;
+        }
+
+        ::view-transition-new(root) {
+            animation: 0.2s ease-in both move-in;
+        }
+
         .settings-card {
             background-color: var(--background);
             background: linear-gradient(15deg, var(--primary) -100%, var(--background));
@@ -132,24 +169,6 @@
             background-color: #b71c1c;
         }
 
-        .settings-back-link {
-            display: block;
-            width: fit-content;
-
-            margin: 1rem;
-            padding: 0.75rem 1.5rem;
-            margin-inline: auto;
-            background-color: var(--background);
-            color: var(--text);
-            text-decoration: none;
-            border-radius: 0.25rem;
-            transition: outline-color 0.2s;
-
-            /* Outlined box style */
-            outline: 0.2em solid var(--secondary);
-            outline-offset: 0.1em;
-        }
-
         .settings-back-link:hover {
             outline-color: var(--primary);
         }
@@ -259,9 +278,8 @@
 <body>
     <nav>
         <p class="app-title"><span class="mdi--hot-cold"></span>System Ogrzewania</p>
+        <a class="mdi--home-variant" href="/"></a>
     </nav>
-
-    <a href="/" class="settings-back-link">← Powrót do Pulpitu</a>
 
     <div class="settings-card settings-user ">
         <h2 class="settings-section-title">Twoje Urządzenie</h2>

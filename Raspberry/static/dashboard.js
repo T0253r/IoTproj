@@ -17,7 +17,7 @@ const statusToDesc = {
 }
 
 function getStatusInfo(priority) {
-    if (priority == 2) return { className: 'status-locked', text: 'Ręczna zmiana' };
+    if (priority == 2) return { className: 'status-locked', text: 'Ręcznie' };
     if (priority == 1) return { className: 'status-auto', text: 'AutoTemp' };
     return { className: 'status-default', text: 'System' };
 }
@@ -251,24 +251,15 @@ function createOrUpdateControllerDetails(c) {
         const statusBox = document.createElement('div');
         statusBox.className = 'status-box';
 
-        // const statusLine1 = document.createElement('div');
-        // statusLine1.className = 'status-line';
-        // statusLine1.textContent = 'Status: ';
-        // const statusTextSpan = document.createElement('span');
-        // statusTextSpan.className = 'status-text';
-        // statusLine1.appendChild(statusTextSpan);
-
-        // const statusLine2 = document.createElement('div');
-        // statusLine2.className = 'status-line';
-        // statusLine2.id = `last-change-${c.controller_id}`;
         const statusLine1 = document.createElement('div');
-        statusLine1.className = 'status-line status-text';
+        statusLine1.className = 'status-line status-text temp-box-value';
         const statusLine2 = document.createElement('div');
-        statusLine2.className = 'status-line';
+        statusLine2.className = 'temp-box-label';
+        statusLine2.textContent = 'Ostatnia zmiana';
         statusLine2.id = `last-change-${c.controller_id}`;
 
-        statusBox.appendChild(statusLine1);
         statusBox.appendChild(statusLine2);
+        statusBox.appendChild(statusLine1);
 
         tempGrid.appendChild(statusBox);
 
@@ -337,7 +328,6 @@ function createOrUpdateControllerDetails(c) {
 
 
     const currTempEl = document.getElementById(`curr-temp-${c.controller_id}`);
-    console.log(c, currTempEl, (`curr-temp-${c.controller_id}`));
     currTempEl.textContent = `${parseFloat(c.curr_temp).toFixed(1)}°C`;
 
     // Update picker carousel position
@@ -360,29 +350,6 @@ function createOrUpdateControllerDetails(c) {
         span.textContent = statusInfo.text;
         statusText.appendChild(span);
     }
-
-    const lastChangeLine = document.getElementById(`last-change-${c.controller_id}`);
-    // calc time since last seen
-    const lastSeenDate = new Date(c.last_seen);
-    const now = new Date();
-    const timeDiff = Math.floor((now - lastSeenDate) / 1000); // in seconds
-    let lastSeenText = '';
-    if (timeDiff < 60) {
-        lastSeenText = `${timeDiff} s temu`;
-    }
-    else if (timeDiff < 3600) {
-        const minutes = Math.floor(timeDiff / 60);
-        lastSeenText = `${minutes} m temu`;
-    }
-    else if (timeDiff < 86400) {
-        const hours = Math.floor(timeDiff / 3600);
-        lastSeenText = `${hours} h temu`;
-    }
-    else {
-        const days = Math.floor(timeDiff / 86400);
-        lastSeenText = `${days} d temu`;
-    }
-    lastChangeLine.textContent = `${c.locked_by_name || 'N/A'}, ${lastSeenText || 'Nigdy'}`;
 
     const checkbox = document.getElementById(`autotemp-${c.controller_id}`);
     checkbox.checked = !!c.user_pref_temp;
@@ -478,12 +445,12 @@ function updatePickerArrowsVisibility(carouselId, currentTemp) {
 
     // Hide up arrow at max temperature (40°C)
     if (upArrow) {
-        upArrow.style.opacity = currentTemp >= 40 ? '0' : '1';
+        upArrow.classList.toggle('disabled', currentTemp >= 40);
     }
 
     // Hide down arrow at min temperature (15°C)
     if (downArrow) {
-        downArrow.style.opacity = currentTemp <= 15 ? '0' : '1';
+        downArrow.classList.toggle('disabled', currentTemp <= 15);
     }
 }
 
