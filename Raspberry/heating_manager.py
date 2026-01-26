@@ -142,8 +142,8 @@ def sync_loop(client):
                     c_id = controller['controller_id']
                     target = controller['target_temp']
                     if c_id and target is not None:
-                        client.publish(f"controllers/{c_id}/target-temp", str(int(target)))
-                        logging.info(f"Published message (id/target): {c_id}/{str(int(target))}")
+                        client.publish(f"controllers/{c_id}/target-temp", str(float(target)))
+                        logging.info(f"Published message (id/target): {c_id}/{str(float(target))}")
             finally:
                 conn.close()
             
