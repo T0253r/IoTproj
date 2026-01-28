@@ -59,6 +59,10 @@ h1 {
     background-clip: text;
     -webkit-background-clip: text;
     color: transparent;
+    max-width: 90%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
 a {
@@ -180,21 +184,23 @@ MARK: Controller cards
         opacity: 0;
     }
 }
-.controller-card.offline, .controller-details.offline{
+
+.controller-card.offline,
+.controller-details.offline {
     opacity: 0.6;
     pointer-events: none;
 
     --vortex-main: var(--accent);
 }
 
-.controller-details.stable.offline::before{
+.controller-details.stable.offline::before {
     content: "Offline";
 }
 
 .controller-card.offline::after {
     content: "Offline";
     color: var(--accent);
-    font-size: 1.2rem;
+    font-size: 1rem;
     font-family: Inter, sans-serif;
     font-weight: bold;
     position: absolute;
@@ -207,7 +213,7 @@ MARK: Controller cards
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
-    max-width: 90%;
+    max-width: 80%;
 }
 
 .controller-card-temp {
@@ -330,19 +336,15 @@ MARK: Controller cards
 .stable,
 .heating,
 .cooling {
-    --vortex-darker: color-mix(
-        in srgb,
-        var(--vortex-main) 20%,
-        var(--secondary)
-    );
+    --vortex-darker: color-mix(in srgb,
+            var(--vortex-main) 20%,
+            var(--secondary));
 }
 
 .controller-card {
-    background: linear-gradient(
-        15deg,
-        var(--vortex-main) -100%,
-        var(--background)
-    );
+    background: linear-gradient(15deg,
+            var(--vortex-main) -100%,
+            var(--background));
 }
 
 .card-vortex {
@@ -374,11 +376,9 @@ MARK: Controller details
 .controller-details {
     position: relative;
     /* background-color: var(--background); */
-    background: linear-gradient(
-        15deg,
-        var(--vortex-main) -100%,
-        var(--background)
-    );
+    background: linear-gradient(15deg,
+            var(--vortex-main) -100%,
+            var(--background));
 
     padding: 1.5rem;
     padding-inline: 1rem;
@@ -449,7 +449,7 @@ MARK: Controller details
     gap: 1rem;
     margin-bottom: 1rem;
 
-    & > .temp-box:nth-child(2) {
+    &>.temp-box:nth-child(2) {
         grid-row: span 2;
         text-align: center;
     }
@@ -546,20 +546,16 @@ MARK: Controller details
     overflow: hidden;
     position: relative;
     width: 100%;
-    mask-image: linear-gradient(
-        to bottom,
-        transparent,
-        black calc(var(--option-height) * 1),
-        black calc(var(--option-height) * 2),
-        transparent
-    );
-    -webkit-mask-image: linear-gradient(
-        to bottom,
-        transparent,
-        black calc(var(--option-height) * 1),
-        black calc(var(--option-height) * 2),
-        transparent
-    );
+    mask-image: linear-gradient(to bottom,
+            transparent,
+            black calc(var(--option-height) * 1),
+            black calc(var(--option-height) * 2),
+            transparent);
+    -webkit-mask-image: linear-gradient(to bottom,
+            transparent,
+            black calc(var(--option-height) * 1),
+            black calc(var(--option-height) * 2),
+            transparent);
 }
 
 .picker-carousel {
@@ -686,15 +682,15 @@ MARK: Controller details
     border-radius: 50%;
 }
 
-input:checked + .slider {
+input:checked+.slider {
     background-color: var(--vortex-main);
 }
 
-input:checked + .slider:before {
+input:checked+.slider:before {
     transform: translateX(120%);
 }
 
-input:disabled + .slider {
+input:disabled+.slider {
     opacity: 0.5;
     cursor: not-allowed;
 }
@@ -719,8 +715,7 @@ input:disabled + .slider {
     }
 }
 
-.controller-details:has(input[type="checkbox"]:not(:checked))
-    .comfort-temp-control {
+.controller-details:has(input[type="checkbox"]:not(:checked)) .comfort-temp-control {
     opacity: 0.5;
     pointer-events: none;
     user-select: none;
