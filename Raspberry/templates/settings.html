@@ -1,486 +1,457 @@
 <!doctype html>
 <html lang="pl">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Ustawienia Systemu</title>
-        <meta name="theme-color" content="#1c1818" />
-        <link
-            rel="stylesheet"
-            href="{{ url_for(endpoint='.static', filename='style.css') }}"
-        />
-        <link
-            rel="stylesheet"
-            href="{{ url_for(endpoint='.static', filename='alerts.css') }}"
-        />
-        <style>
-            @view-transition {
-                navigation: auto;
-            }
 
-            /* custom mpa animation */
-            @keyframes move-out {
-                from {
-                    transform: translateY(0%);
-                    opacity: 1;
-                }
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ustawienia Systemu</title>
+    <meta name="theme-color" content="#1c1818" />
+    <link rel="stylesheet" href="{{ url_for(endpoint='.static', filename='style.css') }}" />
+    <link rel="stylesheet" href="{{ url_for(endpoint='.static', filename='alerts.css') }}" />
+    <link rel="shortcut icon" href="{{ url_for(endpoint='.static', filename='favicon.svg') }}" type="image/x-icon">
 
-                to {
-                    transform: translateY(-10%);
-                    opacity: 0;
-                }
-            }
+    <style>
+        @view-transition {
+            navigation: auto;
+        }
 
-            @keyframes move-in {
-                from {
-                    transform: translateY(10%);
-                    opacity: 0;
-                }
-
-                to {
-                    transform: translateY(0%);
-                    opacity: 1;
-                }
-            }
-
-            ::view-transition-old(root) {
-                animation: 0.2s ease-in both move-out;
-            }
-
-            ::view-transition-new(root) {
-                animation: 0.2s ease-in both move-in;
-            }
-
-            .settings-card {
-                position: relative;
-                background: linear-gradient(
-                    15deg,
-                    var(--primary) -100%,
-                    var(--background)
-                );
-                padding: 1.5rem;
-                border-radius: 0.5rem;
-                margin: 1rem;
-
-                /* Outlined box style matching index */
-                outline: 0.2em solid var(--secondary);
-                outline-offset: 0.1em;
-                transition: outline 0.2s;
-            }
-
-            .settings-section-title {
-                font-size: 1.25rem;
-                margin: 0 0 1rem 0;
-                color: var(--text);
-                font-weight: 600;
-            }
-
-            .settings-item-row {
-                display: flex;
-                flex-direction: column;
-                gap: 1rem;
-                padding: 1rem;
-                margin-bottom: 1rem;
-                background-color: var(--background);
-                border-radius: 0.25rem;
-
-                /* Outlined box for each item */
-                outline: 0.2em solid var(--secondary);
-                outline-offset: 0.1em;
-            }
-
-            .settings-item-row:last-child {
-                margin-bottom: 0;
-            }
-
-            .settings-item-info {
-                display: flex;
-                flex-direction: row;
-                gap: 0.75rem;
-                width: 100%;
-                position: relative;
-            }
-
-            .settings-last-seen {
-                display: block;
-                position: absolute;
-                top: -0.1rem;
-                right: 0;
-                color: var(--text);
-                font-size: 0.6rem;
-                opacity: 0.5;
-                transition: color 0.2s;
-            }
-
-            .settings-item-row.offline {
-                outline-color: #d32f2f;
-            }
-
-            .settings-item-row.offline .settings-last-seen {
-                color: #d32f2f;
+        /* custom mpa animation */
+        @keyframes move-out {
+            from {
+                transform: translateY(0%);
                 opacity: 1;
             }
 
-            .settings-user .settings-item-info {
-                flex-direction: column;
+            to {
+                transform: translateY(-10%);
+                opacity: 0;
+            }
+        }
+
+        @keyframes move-in {
+            from {
+                transform: translateY(10%);
+                opacity: 0;
             }
 
-            .settings-item-field {
-                display: flex;
-                flex-direction: column;
-                gap: 0.25rem;
+            to {
+                transform: translateY(0%);
+                opacity: 1;
+            }
+        }
 
-                &:last-child {
-                    flex: 2;
-                }
+        ::view-transition-old(root) {
+            animation: 0.2s ease-in both move-out;
+        }
+
+        ::view-transition-new(root) {
+            animation: 0.2s ease-in both move-in;
+        }
+
+        .settings-card {
+            position: relative;
+            background: linear-gradient(15deg,
+                    var(--primary) -100%,
+                    var(--background));
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            margin: 1rem;
+
+            /* Outlined box style matching index */
+            outline: 0.2em solid var(--secondary);
+            outline-offset: 0.1em;
+            transition: outline 0.2s;
+        }
+
+        .settings-section-title {
+            font-size: 1.25rem;
+            margin: 0 0 1rem 0;
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        .settings-item-row {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background-color: var(--background);
+            border-radius: 0.25rem;
+
+            /* Outlined box for each item */
+            outline: 0.2em solid var(--secondary);
+            outline-offset: 0.1em;
+        }
+
+        .settings-item-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .settings-item-info {
+            display: flex;
+            flex-direction: row;
+            gap: 0.75rem;
+            width: 100%;
+            position: relative;
+        }
+
+        .settings-last-seen {
+            display: block;
+            position: absolute;
+            top: -0.1rem;
+            right: 0;
+            color: var(--text);
+            font-size: 0.6rem;
+            opacity: 0.5;
+            transition: color 0.2s;
+        }
+
+        .settings-item-row.offline {
+            outline-color: #d32f2f;
+        }
+
+        .settings-item-row.offline .settings-last-seen {
+            color: #d32f2f;
+            opacity: 1;
+        }
+
+        .settings-user .settings-item-info {
+            flex-direction: column;
+        }
+
+        .settings-item-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+
+            &:last-child {
+                flex: 2;
+            }
+        }
+
+        .settings-item-field label {
+            font-size: 0.8rem;
+            opacity: 0.6;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .settings-item-field input[type="text"] {
+            background-color: var(--background);
+            border: none;
+            outline: 0.15em solid var(--secondary);
+            outline-offset: 0.05em;
+            color: var(--text);
+            padding: 0.75rem;
+            border-radius: 0.25rem;
+            font-size: 1rem;
+            /* width: 70%; */
+            transition: outline-color 0.2s;
+        }
+
+        .settings-item-field input[type="text"]:focus {
+            outline-color: var(--primary);
+        }
+
+        .settings-readonly {
+            background-color: transparent;
+            color: var(--text);
+            padding: 0.5rem 0;
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+
+        .settings-action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+
+        .settings-btn {
+            border: none;
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            border-radius: 0.25rem;
+            font-size: 0.9rem;
+            line-height: 0.8;
+            text-transform: uppercase;
+            font-family: Inter, sans-serif;
+            font-weight: 500;
+            background-color: var(--background);
+            outline: 0.15em solid var(--primary);
+            color: var(--text);
+            transition: background-color 0.2s;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .settings-btn:hover {
+            background-color: var(--accent);
+        }
+
+        .settings-btn-danger {
+            outline: 0.15em solid #d32f2f;
+        }
+
+        .settings-btn-danger:hover {
+            background-color: #b71c1c;
+        }
+
+        .settings-back-link:hover {
+            outline-color: var(--primary);
+        }
+
+        /* Mobile-first responsive design */
+        @media (max-width: 412px) {
+            .settings-card {
+                padding: 1rem;
+                margin-bottom: 1rem;
             }
 
-            .settings-item-field label {
-                font-size: 0.8rem;
-                opacity: 0.6;
-                font-weight: 500;
-                text-transform: uppercase;
-                letter-spacing: 0.05em;
-            }
-
-            .settings-item-field input[type="text"] {
-                background-color: var(--background);
-                border: none;
-                outline: 0.15em solid var(--secondary);
-                outline-offset: 0.05em;
-                color: var(--text);
+            .settings-item-row {
                 padding: 0.75rem;
-                border-radius: 0.25rem;
-                font-size: 1rem;
-                /* width: 70%; */
-                transition: outline-color 0.2s;
-            }
-
-            .settings-item-field input[type="text"]:focus {
-                outline-color: var(--primary);
-            }
-
-            .settings-readonly {
-                background-color: transparent;
-                color: var(--text);
-                padding: 0.5rem 0;
-                font-size: 1rem;
-                opacity: 0.8;
-            }
-
-            .settings-action-buttons {
-                display: flex;
-                gap: 0.5rem;
-                flex-wrap: wrap;
-                width: 100%;
             }
 
             .settings-btn {
-                border: none;
-                padding: 0.75rem 1.5rem;
-                cursor: pointer;
-                border-radius: 0.25rem;
-                font-size: 0.9rem;
-                line-height: 0.8;
-                text-transform: uppercase;
-                font-family: Inter, sans-serif;
-                font-weight: 500;
-                background-color: var(--background);
-                outline: 0.15em solid var(--primary);
-                color: var(--text);
-                transition: background-color 0.2s;
-                flex: 1;
-                min-width: 120px;
+                padding: 0.65rem 1rem;
+                font-size: 0.85rem;
             }
+        }
+    </style>
+</head>
 
-            .settings-btn:hover {
-                background-color: var(--accent);
-            }
+<body>
+    <nav>
+        <p class="app-title">
+            <span class="mdi--hot-cold"></span>System Ogrzewania
+        </p>
+        <a class="mdi--home-variant" href="/"></a>
+    </nav>
 
-            .settings-btn-danger {
-                outline: 0.15em solid #d32f2f;
-            }
-
-            .settings-btn-danger:hover {
-                background-color: #b71c1c;
-            }
-
-            .settings-back-link:hover {
-                outline-color: var(--primary);
-            }
-
-            /* Mobile-first responsive design */
-            @media (max-width: 412px) {
-                .settings-card {
-                    padding: 1rem;
-                    margin-bottom: 1rem;
-                }
-
-                .settings-item-row {
-                    padding: 0.75rem;
-                }
-
-                .settings-btn {
-                    padding: 0.65rem 1rem;
-                    font-size: 0.85rem;
-                }
-            }
-        </style>
-    </head>
-
-    <body>
-        <nav>
-            <p class="app-title">
-                <span class="mdi--hot-cold"></span>System Ogrzewania
-            </p>
-            <a class="mdi--home-variant" href="/"></a>
-        </nav>
-
-        <div class="settings-card settings-user">
-            <h2 class="settings-section-title">Twoje Urządzenie</h2>
-            {% if current_user %}
-            <div class="settings-item-row">
-                <div class="settings-item-info">
-                    <div class="settings-item-field">
-                        <label>MAC</label>
-                        <span class="settings-readonly"
-                            >{{ current_user['mac'] }}</span
-                        >
-                    </div>
-                    <div class="settings-item-field">
-                        <label>Hostname</label>
-                        <span class="settings-readonly"
-                            >{{ current_user['hostname'] or 'N/A' }}</span
-                        >
-                    </div>
-                    <div class="settings-item-field">
-                        <label>IP</label>
-                        <span class="settings-readonly"
-                            >{{ current_user['ip'] or 'N/A' }}</span
-                        >
-                    </div>
-                    <div class="settings-item-field">
-                        <label>Nazwa</label>
-                        <input
-                            type="text"
-                            id="device_name"
-                            value="{{ current_user['username'] or '' }}"
-                            maxlength="25"
-                            placeholder="Nazwa urządzenia"
-                        />
-                    </div>
+    <div class="settings-card settings-user">
+        <h2 class="settings-section-title">Twoje Urządzenie</h2>
+        {% if current_user %}
+        <div class="settings-item-row">
+            <div class="settings-item-info">
+                <div class="settings-item-field">
+                    <label>MAC</label>
+                    <span class="settings-readonly">{{ current_user['mac'] }}</span>
                 </div>
-                <div class="settings-action-buttons">
-                    <button class="settings-btn" onclick="updateUsername()">
-                        Zapisz
-                    </button>
+                <div class="settings-item-field">
+                    <label>Hostname</label>
+                    <span class="settings-readonly">{{ current_user['hostname'] or 'N/A' }}</span>
+                </div>
+                <div class="settings-item-field">
+                    <label>IP</label>
+                    <span class="settings-readonly">{{ current_user['ip'] or 'N/A' }}</span>
+                </div>
+                <div class="settings-item-field">
+                    <label>Nazwa</label>
+                    <input type="text" id="device_name" value="{{ current_user['username'] or '' }}" maxlength="25"
+                        placeholder="Nazwa urządzenia" />
                 </div>
             </div>
-            {% else %}
-            <p>Nie rozpoznano urządzenia.</p>
-            {% endif %}
+            <div class="settings-action-buttons">
+                <button class="settings-btn" onclick="updateUsername()">
+                    Zapisz
+                </button>
+            </div>
         </div>
+        {% else %}
+        <p>Nie rozpoznano urządzenia.</p>
+        {% endif %}
+    </div>
 
-        <div class="settings-card">
-            <h2 class="settings-section-title">Edytuj pokoje</h2>
-            {% if controllers %} {% for controller in controllers %}
-            <div class="settings-item-row">
-                <div class="settings-item-info">
-                    <span
-                        class="settings-last-seen"
-                        id="last_seen_{{ controller['controller_id'] }}"
-                        data-timestamp="{{ controller['last_seen'] }}"
-                    >
-                        Ostatnia aktywność: {{ controller['last_seen'] }}
-                    </span>
-                    <div class="settings-item-field">
-                        <label>ID</label>
-                        <span class="settings-readonly"
-                            >{{ controller['controller_id'] }}</span
-                        >
-                    </div>
-                    <div class="settings-item-field">
-                        <label>Nazwa</label>
-                        <input
-                            type="text"
-                            id="controller_name_{{ controller['controller_id'] }}"
-                            value="{{ controller['name'] }}"
-                            maxlength="25"
-                        />
-                    </div>
+    <div class="settings-card">
+        <h2 class="settings-section-title">Edytuj pokoje</h2>
+        {% if controllers %} {% for controller in controllers %}
+        <div class="settings-item-row">
+            <div class="settings-item-info">
+                <span class="settings-last-seen" id="last_seen_{{ controller['controller_id'] }}"
+                    data-timestamp="{{ controller['last_seen'] }}">
+                    Ostatnia aktywność: {{ controller['last_seen'] }}
+                </span>
+                <div class="settings-item-field">
+                    <label>ID</label>
+                    <span class="settings-readonly">{{ controller['controller_id'] }}</span>
                 </div>
-                <div class="settings-action-buttons">
-                    <button
-                        class="settings-btn"
-                        onclick="updateControllerName({{ controller['controller_id'] }})"
-                    >
-                        Zapisz
-                    </button>
-                    <button
-                        class="settings-btn settings-btn-danger"
-                        onclick="deleteController({{ controller['controller_id'] }})"
-                    >
-                        Usuń
-                    </button>
+                <div class="settings-item-field">
+                    <label>Nazwa</label>
+                    <input type="text" id="controller_name_{{ controller['controller_id'] }}"
+                        value="{{ controller['name'] }}" maxlength="25" />
                 </div>
             </div>
-            {% endfor %} {% else %}
-            <p>Brak kontrolerów w systemie.</p>
-            {% endif %}
+            <div class="settings-action-buttons">
+                <button class="settings-btn" onclick="updateControllerName({{ controller['controller_id'] }})">
+                    Zapisz
+                </button>
+                <button class="settings-btn settings-btn-danger"
+                    onclick="deleteController({{ controller['controller_id'] }})">
+                    Usuń
+                </button>
+            </div>
         </div>
-        <script src="{{ url_for(endpoint='.static', filename='alerts.js') }}"></script>
-        <script>
-            const server_timestamp = Date.parse("{{ current_timestamp }}");
-            var server_time_offset = Date.now() - server_timestamp;
+        {% endfor %} {% else %}
+        <p>Brak kontrolerów w systemie.</p>
+        {% endif %}
+    </div>
+    <script src="{{ url_for(endpoint='.static', filename='alerts.js') }}"></script>
+    <script>
+        const server_timestamp = Date.parse("{{ current_timestamp }}");
+        var server_time_offset = Date.now() - server_timestamp;
 
-            function isTimeOffline(last_seen_controller) {
-                const last_seen = Date.parse(last_seen_controller);
-                const current_time_on_server = Date.now() - server_time_offset;
-                const MAX_DELAY = 1000 * 60 * 1; // 1 minute
+        function isTimeOffline(last_seen_controller) {
+            const last_seen = Date.parse(last_seen_controller);
+            const current_time_on_server = Date.now() - server_time_offset;
+            const MAX_DELAY = 1000 * 60 * 1; // 1 minute
 
-                return last_seen + MAX_DELAY < current_time_on_server;
-            }
+            return last_seen + MAX_DELAY < current_time_on_server;
+        }
 
-            // Update last seen times for all controllers
-            function updateLastSeenTimes() {
-                const lastSeenElements = document.querySelectorAll(
-                    ".settings-last-seen",
-                );
-                lastSeenElements.forEach((element) => {
-                    const serverTimestamp =
-                        element.getAttribute("data-timestamp");
-                    if (serverTimestamp) {
-                        // Parse the server timestamp and adjust for client time
-                        const serverTime = Date.parse(serverTimestamp);
-                        const clientTime = serverTime + server_time_offset;
+        // Update last seen times for all controllers
+        function updateLastSeenTimes() {
+            const lastSeenElements = document.querySelectorAll(
+                ".settings-last-seen",
+            );
+            lastSeenElements.forEach((element) => {
+                const serverTimestamp =
+                    element.getAttribute("data-timestamp");
+                if (serverTimestamp) {
+                    // Parse the server timestamp and adjust for client time
+                    const serverTime = Date.parse(serverTimestamp);
+                    const clientTime = serverTime + server_time_offset;
 
-                        // Format the adjusted time
-                        const date = new Date(clientTime);
-                        const formattedTime = date.toLocaleString("pl-PL", {
-                            year: "numeric",
-                            month: "2-digit",
-                            day: "2-digit",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            second: "2-digit",
-                        });
+                    // Format the adjusted time
+                    const date = new Date(clientTime);
+                    const formattedTime = date.toLocaleString("pl-PL", {
+                        year: "numeric",
+                        month: "2-digit",
+                        day: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                    });
 
-                        element.textContent = `Ostatnia aktywność: ${formattedTime}`;
+                    element.textContent = `Ostatnia aktywność: ${formattedTime}`;
 
-                        // Check if controller is offline and apply styling
-                        const isOffline = isTimeOffline(serverTimestamp);
-                        const controllerRow =
-                            element.closest(".settings-item-row");
-                        if (controllerRow) {
-                            if (isOffline) {
-                                controllerRow.classList.add("offline");
-                            } else {
-                                controllerRow.classList.remove("offline");
-                            }
+                    // Check if controller is offline and apply styling
+                    const isOffline = isTimeOffline(serverTimestamp);
+                    const controllerRow =
+                        element.closest(".settings-item-row");
+                    if (controllerRow) {
+                        if (isOffline) {
+                            controllerRow.classList.add("offline");
+                        } else {
+                            controllerRow.classList.remove("offline");
                         }
                     }
+                }
+            });
+        }
+
+        // Update times on page load
+        updateLastSeenTimes();
+
+        function updateControllerName(controllerId) {
+            const nameInput = document.getElementById(
+                `controller_name_${controllerId}`,
+            );
+            const newName = nameInput.value.trim();
+
+            if (!newName) {
+                showCustomAlert("Nazwa nie może być pusta");
+                return;
+            }
+
+            if (newName.length > 40) {
+                showCustomAlert("Nazwa może mieć maksymalnie 40 znaków");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("controller_id", controllerId);
+            formData.append("name", newName);
+
+            fetch("/update_controller_name", {
+                method: "POST",
+                body: formData,
+            })
+                .then((response) => {
+                    if (response.ok) {
+                        showCustomAlert(
+                            "Nazwa kontrolera zaktualizowana",
+                        );
+                    } else {
+                        showCustomAlert("Błąd podczas aktualizacji nazwy");
+                    }
+                })
+                .catch((error) => {
+                    showCustomAlert("Błąd: " + error);
                 });
+        }
+
+        async function deleteController(controllerId) {
+            const confirmed = await showCustomConfirm(
+                "Czy na pewno chcesz usunąć ten kontroler?",
+            );
+            if (!confirmed) {
+                return;
             }
 
-            // Update times on page load
-            updateLastSeenTimes();
+            const formData = new FormData();
+            formData.append("controller_id", controllerId);
 
-            function updateControllerName(controllerId) {
-                const nameInput = document.getElementById(
-                    `controller_name_${controllerId}`,
-                );
-                const newName = nameInput.value.trim();
-
-                if (!newName) {
-                    showCustomAlert("Nazwa nie może być pusta");
-                    return;
-                }
-
-                if (newName.length > 40) {
-                    showCustomAlert("Nazwa może mieć maksymalnie 40 znaków");
-                    return;
-                }
-
-                const formData = new FormData();
-                formData.append("controller_id", controllerId);
-                formData.append("name", newName);
-
-                fetch("/update_controller_name", {
-                    method: "POST",
-                    body: formData,
+            fetch("/delete_controller", {
+                method: "POST",
+                body: formData,
+            })
+                .then((response) => {
+                    if (response.ok) {
+                        showCustomAlert("Kontroler usunięty").then(() => {
+                            window.location.reload();
+                        });
+                    } else {
+                        showCustomAlert("Błąd podczas usuwania kontrolera");
+                    }
                 })
-                    .then((response) => {
-                        if (response.ok) {
-                            showCustomAlert(
-                                "Nazwa kontrolera zaktualizowana",
-                            ).then(() => location.reload());
-                        } else {
-                            showCustomAlert("Błąd podczas aktualizacji nazwy");
-                        }
-                    })
-                    .catch((error) => {
-                        showCustomAlert("Błąd: " + error);
-                    });
+                .catch((error) => {
+                    showCustomAlert("Błąd: " + error);
+                });
+        }
+
+        function updateUsername() {
+            const nameInput = document.getElementById("device_name");
+            const newName = nameInput.value.trim();
+
+            if (newName.length > 40) {
+                showCustomAlert("Nazwa może mieć maksymalnie 40 znaków");
+                return;
             }
 
-            async function deleteController(controllerId) {
-                const confirmed = await showCustomConfirm(
-                    "Czy na pewno chcesz usunąć ten kontroler?",
-                );
-                if (!confirmed) {
-                    return;
-                }
+            const formData = new FormData();
+            formData.append("username", newName);
 
-                const formData = new FormData();
-                formData.append("controller_id", controllerId);
-
-                fetch("/delete_controller", {
-                    method: "POST",
-                    body: formData,
+            fetch("/update_username", {
+                method: "POST",
+                body: formData,
+            })
+                .then((response) => {
+                    if (response.ok) {
+                        showCustomAlert(
+                            "Nazwa urządzenia zaktualizowana",
+                        );
+                    } else {
+                        showCustomAlert("Błąd podczas aktualizacji nazwy");
+                    }
                 })
-                    .then((response) => {
-                        if (response.ok) {
-                            showCustomAlert("Kontroler usunięty").then(() =>
-                                location.reload(),
-                            );
-                        } else {
-                            showCustomAlert("Błąd podczas usuwania kontrolera");
-                        }
-                    })
-                    .catch((error) => {
-                        showCustomAlert("Błąd: " + error);
-                    });
-            }
+                .catch((error) => {
+                    showCustomAlert("Błąd: " + error);
+                });
+        }
+    </script>
+</body>
 
-            function updateUsername() {
-                const nameInput = document.getElementById("device_name");
-                const newName = nameInput.value.trim();
-
-                if (newName.length > 40) {
-                    showCustomAlert("Nazwa może mieć maksymalnie 40 znaków");
-                    return;
-                }
-
-                const formData = new FormData();
-                formData.append("username", newName);
-
-                fetch("/update_username", {
-                    method: "POST",
-                    body: formData,
-                })
-                    .then((response) => {
-                        if (response.ok) {
-                            showCustomAlert(
-                                "Nazwa urządzenia zaktualizowana",
-                            ).then(() => location.reload());
-                        } else {
-                            showCustomAlert("Błąd podczas aktualizacji nazwy");
-                        }
-                    })
-                    .catch((error) => {
-                        showCustomAlert("Błąd: " + error);
-                    });
-            }
-        </script>
-    </body>
 </html>

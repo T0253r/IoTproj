@@ -2,6 +2,15 @@ function hasOpenModal() {
     return document.querySelector(".custom-modal-overlay") !== null;
 }
 
+function closeModalWithAnimation(overlay, modal, callback) {
+    overlay.classList.add("fade-out");
+    modal.classList.add("scale-out");
+    setTimeout(() => {
+        document.body.removeChild(overlay);
+        callback();
+    }, 200);
+}
+
 function showCustomAlert(message) {
     if (hasOpenModal()) {
         return Promise.resolve();
@@ -25,8 +34,7 @@ function showCustomAlert(message) {
         okBtn.className = "custom-modal-btn";
         okBtn.textContent = "OK";
         okBtn.onclick = () => {
-            document.body.removeChild(overlay);
-            resolve();
+            closeModalWithAnimation(overlay, modal, () => resolve());
         };
 
         buttonsDiv.appendChild(okBtn);
@@ -63,8 +71,7 @@ function showCustomConfirm(message) {
             "custom-modal-btn custom-modal-btn-cancel";
         cancelBtn.textContent = "Anuluj";
         cancelBtn.onclick = () => {
-            document.body.removeChild(overlay);
-            resolve(false);
+            closeModalWithAnimation(overlay, modal, () => resolve(false));
         };
 
         const confirmBtn = document.createElement("button");
@@ -72,8 +79,7 @@ function showCustomConfirm(message) {
             "custom-modal-btn custom-modal-btn-danger";
         confirmBtn.textContent = "Potwierdź";
         confirmBtn.onclick = () => {
-            document.body.removeChild(overlay);
-            resolve(true);
+            closeModalWithAnimation(overlay, modal, () => resolve(true));
         };
 
         buttonsDiv.appendChild(cancelBtn);

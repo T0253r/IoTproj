@@ -249,7 +249,7 @@ MARK: Controller cards
     position: absolute;
     bottom: -50%;
     right: -30%;
-    height: 130%;
+    height: 140%;
     aspect-ratio: 1;
 }
 
@@ -391,8 +391,8 @@ MARK: Controller details
         --vortex-main 0.5s,
         --vortex-accent 0.5s,
         outline-color 0.2s,
-        opacity 0.4s 0.1s,
-        display 0.6s;
+        opacity 0.2s 0.1s,
+        display 0.4s;
     transition-behavior: allow-discrete;
 
     opacity: 1;

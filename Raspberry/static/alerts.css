@@ -20,12 +20,26 @@
     }
 }
 
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+.custom-modal-overlay.fade-out {
+    animation: fadeOut 0.2s forwards;
+}
+
 .custom-modal {
     background-color: var(--background);
     border-radius: 0.5rem;
     padding: 2rem;
-    max-width: 70vw;
-    min-width: 50vw;
+    max-width: calc(0.7 * var(--screen-width));
+    min-width: calc(0.5 * var(--screen-width));
     outline: 0.2em solid var(--secondary);
     outline-offset: 0.1em;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
@@ -37,6 +51,20 @@
     to {
         transform: scale(1);
     }
+}
+
+@keyframes scaleOut {
+    from {
+        transform: scale(1);
+    }
+
+    to {
+        transform: scale(1.1);
+    }
+}
+
+.custom-modal.scale-out {
+    animation: scaleOut 0.2s forwards;
 }
 
 .custom-modal-message {

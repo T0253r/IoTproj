@@ -43,7 +43,7 @@ def create_mock_controllers():
             cursor.execute('''
                 INSERT OR IGNORE INTO controllers 
                 (controller_id, name, target_temp, curr_temp, priority, last_seen)
-                VALUES (?, ?, ?, ?, 0, CURRENT_TIMESTAMP)
+                VALUES (?, ?, ?, ?, 0, datetime('now', '+1 year'))
             ''', (c_id, name, target, curr))
             
             # Optional: If it exists but we want to reset names/values, use UPDATE
