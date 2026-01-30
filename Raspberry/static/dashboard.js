@@ -32,7 +32,7 @@ const statusToDesc = {
 
 function getStatusInfo(priority, user = "") {
     if (priority == 2) return { className: 'status-locked', text: `${user}` };
-    if (priority == 1) return { className: 'status-auto', text: 'AutoTemp' };
+    if (priority == 1) return { className: 'status-auto', text: `AutoTemp™ ${user}` };
     return { className: 'status-default', text: 'System' };
 }
 
@@ -194,6 +194,9 @@ function createOrUpdateControllerCard(c) {
     if (selectedControllerId === c.controller_id) {
         card.classList.add('active');
     }
+    if (c.user_pref_temp) {
+        card.classList.add('autotemp-enabled');
+    }
 
     const is_offline = isTimeOffline(c.last_seen)
     if (is_offline) card.className = "controller-card offline stable"
@@ -210,7 +213,7 @@ function createOrUpdateControllerCard(c) {
     const statusInfo = getStatusInfo(c.priority, c.locked_by_name != "" ? c.locked_by_name : c.set_by);
     const statusSpan = card.querySelector('.info-small span');
     statusSpan.className = statusInfo.className;
-    statusSpan.textContent = statusInfo.text;
+    statusSpan.textContent = `Kontrola: ${statusInfo.text}`;
 
 }
 
@@ -271,7 +274,7 @@ function createOrUpdateControllerDetails(c) {
         statusLine1.className = 'status-line status-text temp-box-value';
         const statusLine2 = document.createElement('div');
         statusLine2.className = 'temp-box-label';
-        statusLine2.textContent = 'Zmienione przez';
+        statusLine2.textContent = 'Kontrolowane przez';
         statusLine2.id = `last-change-${c.controller_id}`;
 
         statusBox.appendChild(statusLine2);
@@ -285,7 +288,7 @@ function createOrUpdateControllerDetails(c) {
         sectionTitle.textContent = 'Twoje ustawienia AutoTemp™';
 
         const infoSmall = document.createElement('div');
-        infoSmall.className = 'info-small';
+        infoSmall.className = 'info-small-autotemp';
         infoSmall.style.marginBottom = '1rem';
         infoSmall.textContent = 'Automatyczna temperatura komfortowa po wykryciu Twojej obecności';
 
@@ -531,7 +534,8 @@ async function adjustTemp(controllerId, delta) {
         const currTemp = parseFloat(cardCurrTemp.textContent);
 
         // Update status class
-        card.className = 'controller-card';
+        // card.className = 'controller-card';
+        card.classList.remove('heating', 'cooling', 'stable');
         if (newTemp > currTemp) {
             card.classList.add('heating');
         } else if (newTemp < currTemp) {
@@ -548,7 +552,7 @@ async function adjustTemp(controllerId, delta) {
         const statusSpan = card.querySelector('.info-small span');
         if (statusSpan) {
             statusSpan.className = statusInfo.className;
-            statusSpan.textContent = statusInfo.text;
+            statusSpan.textContent = `Kontrola: ${statusInfo.text}`;
         }
     }
 
@@ -716,6 +720,11 @@ async function toggleAutoTemp(controllerId, isEnabled, currentTemp) {
         ? { controller_id: controllerId, pref_temp: currentTemp }
         : { controller_id: controllerId };
 
+    const card = document.getElementById(`card-${controllerId}`);
+    if (isEnabled) card.classList.add('autotemp-enabled');
+    else card.classList.remove('autotemp-enabled');
+    
+
     try {
         const response = await fetch(endpoint, {
             method: 'POST',
@@ -816,7 +825,8 @@ function applyManualOverride(controllerId, overrideTemp) {
         const cardCurrTempStrong = card.querySelectorAll('.controller-card-temp strong')[0];
         const currTemp = cardCurrTempStrong ? parseFloat(cardCurrTempStrong.textContent) : 21.5;
 
-        card.className = 'controller-card';
+        // card.className = 'controller-card';
+        card.classList.remove('heating', 'cooling', 'stable');
         if (overrideTemp > currTemp) {
             card.classList.add('heating');
         } else if (overrideTemp < currTemp) {
@@ -832,7 +842,7 @@ function applyManualOverride(controllerId, overrideTemp) {
         const statusSpan = card.querySelector('.info-small span');
         if (statusSpan) {
             statusSpan.className = statusInfo.className;
-            statusSpan.textContent = statusInfo.text;
+            statusSpan.textContent = `Kontrola: ${statusInfo.text}`;
         }
     }
 
@@ -843,6 +853,7 @@ function applyManualOverride(controllerId, overrideTemp) {
         const currTemp = currTempEl ? parseFloat(currTempEl.textContent) : 21.5;
 
         details.className = 'controller-details';
+        details.classList.remove('heating', 'cooling', 'stable');
         if (overrideTemp > currTemp) {
             details.classList.add('heating');
         } else if (overrideTemp < currTemp) {

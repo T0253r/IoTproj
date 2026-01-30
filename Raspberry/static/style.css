@@ -199,13 +199,8 @@ MARK: Controller cards
 
 .controller-card.offline::after {
     content: "Offline";
-    color: var(--accent);
-    font-size: 1rem;
-    font-family: Inter, sans-serif;
-    font-weight: bold;
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
+    color: var(--text);
+    opacity: 0.8;
 }
 
 .controller-name {
@@ -213,7 +208,7 @@ MARK: Controller cards
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
-    max-width: 80%;
+    max-width: 60%;
 }
 
 .controller-card-temp {
@@ -237,12 +232,22 @@ MARK: Controller cards
     }
 }
 
-.controller-card .card-icon {
+.controller-card::after {
+    content: "AutoTemp™";
+    font-size: 0.85em;
+    padding: 0.3em;
     position: absolute;
-    bottom: 1rem;
-    right: 1rem;
-    width: 32px;
-    height: 32px;
+    top: 0.7rem;
+    right: 0.7rem;
+
+    background-color: var(--vortex-main);
+    opacity: 0;
+    border-radius: 0.25rem;
+    transition: opacity 0.2s;
+}
+
+.controller-card.autotemp-enabled::after {
+    opacity: 0.6;
 }
 
 .card-vortex {
@@ -360,8 +365,14 @@ MARK: Controller cards
 }
 
 .info-small {
-    color: var(--text);
-    opacity: 0.5;
+    color: var(--text);    
+    font-size: 0.85rem;
+    opacity: 0.7;
+    margin-top: 0.5rem;
+    max-width: 90%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* ----------------------------
@@ -455,6 +466,18 @@ MARK: Controller details
     }
 }
 
+/* if screen is smaller thn 660px */
+@media (max-width: 360px) {
+    .temp-grid {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+
+        &>.temp-box:nth-child(2) {
+            grid-row-start: 3;
+        }
+    }
+}
+
 .temp-box,
 .status-box {
     padding: 1rem;
@@ -466,9 +489,13 @@ MARK: Controller details
     transition: outline 0.2s;
 
     /* background: linear-gradient(15deg, var(--primary) -100%, var(--background)); */
+}
 
-    .status-line:last-child {
-        font-size: 1.6rem;
+.status-box {
+    container-type: inline-size;
+
+    .status-line {
+        font-size: clamp(1.2rem, 4cqw, 1.5rem);
         opacity: 1;
         color: var(--text);
     }
@@ -625,10 +652,10 @@ MARK: Controller details
 
     span {
         display: block;
-        white-space: nowrap;
+        /* white-space: nowrap; */
         text-overflow: ellipsis;
         overflow: hidden;
-        max-width: calc(var(--screen-width) * 0.3);
+        max-width: calc(var(--screen-width) * 0.4);
     }
 }
 
@@ -687,7 +714,7 @@ input:checked+.slider {
 }
 
 input:checked+.slider:before {
-    transform: translateX(120%);
+    transform: translateX(24px);
 }
 
 input:disabled+.slider {
@@ -767,7 +794,7 @@ input[type="number"]:disabled {
     opacity: 0.5;
 }
 
-.info-small {
+.info-small-autotemp {
     font-size: 0.85rem;
     opacity: 0.7;
     margin-top: 0.5rem;
