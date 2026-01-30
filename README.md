@@ -56,7 +56,6 @@ python run_webapp.py
 ```
 
 Aplikacja będzie dostępna pod adresem: [http://localhost:5000](http://localhost:5000)
-Dokumentacja API (jeśli dostępna): [http://localhost:5000/api/docs](http://localhost:5000/api/docs)
 
 ## Uruchomienie poszczególnych usług
 
