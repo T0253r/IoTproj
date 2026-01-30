@@ -6,7 +6,7 @@ System do zarządzania ogrzewaniem w domu jednorodzinnym, wykorzystujący Raspbe
 
 Projekt składa się z kilku głównych komponentów:
 
-*   **Raspberry Pi (Backend & WebApp):**
+*   **Raspberry Pi:**
     *   `webapp.py` - Aplikacja webowa oparta na Flask, umożliwiająca interakcję użytkownika z systemem.
     *   `heating_manager.py` - Usługa działająca w tle, odpowiedzialna za komunikację MQTT z kontrolerami, odczyt temperatur i sterowanie ogrzewaniem (manualne/automatyczne).
     *   `devices_monitor.py` - Usługa monitorująca podłączone urządzenia w sieci lokalnej i aktualizująca ich status w bazie danych.
