@@ -5,11 +5,12 @@ import logging
 import sys
 import os
 
-# Ensure this matches your project configuration
-# DB_PATH = "/var/lib/iot/iot.db"
-DB_PATH = "iot.db" # Uncomment for local testing if needed
-
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - MOCK - %(message)s')
+
+# Auto-detect production vs testing environment
+PRODUCTION_DB_PATH = "/opt/iot/db/iot.db"
+LOCAL_DB_PATH = "iot.db"
+DB_PATH = PRODUCTION_DB_PATH if os.path.exists(os.path.dirname(PRODUCTION_DB_PATH) or "") else LOCAL_DB_PATH
 
 def get_db_connection():
     if not os.path.exists(DB_PATH):

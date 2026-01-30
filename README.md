@@ -1,3 +1,18 @@
+# System sterowania ogrzewaniem w domu jednorodzinnym
+
+## Quick Start
+
+**Instalacja:** (Utwórz środowisko wirtualne)
+```bash
+pip install -r requirements.txt
+```
+
+**Uruchomienie aplikacji webowej:**
+```bash
+python run_webapp.py
+```
+Zostanie zainicjowana baza danych i utworzone dane testowe. Aplikacja uruchomi się pod adresem http://localhost:5000
+
 ## Co robi kod i jak ma być odpalany
  - db_init.py - inicjalizacja bazy danych, odpalany ręcznie
  - heating_manager.py - komunikuje się ze kontrolerami po mqtt, czyta z bazy potrzebne dane (temperatury zadane przez użytkowników, dane o temperaturach aktualnych  i automatycznych oraz dane o podłączonych urządzeniach), jest odpowiedzialny za ustawianie zadanych temperatur na sterownikach (manulanych i automatycznych), działa jako system service
@@ -9,7 +24,7 @@
 
  ### Lokacja bazy danych
  Dalej nie wiem czy lepiej jest aby to była jakaś względna czy bezwzględna ścieżka, ale na razie wydaje mi się że lepiej to zrobić bezwzględnie (łatwiej usługi systemowe skonfigurować)
- Aktualna ścieżka bazy: **/var/lib/iot/iot.db**
+ Aktualna ścieżka bazy: **/opt/iot/db/iot.db**
 
  ### Kanały mqtt
   - controllers/x/target-temp -> malina publikuje zadane temperatury dla sterownika z ID = x

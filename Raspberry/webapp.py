@@ -1,10 +1,14 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 import sqlite3
+import os
 from flasgger import Swagger, swag_from
 
 app = Flask(__name__)
 app.secret_key = "iot_secret_key"
-DB_PATH = "/opt/iot/db/iot.db"
+# Auto-detect production vs testing environment
+PRODUCTION_DB_PATH = "/opt/iot/db/iot.db"
+LOCAL_DB_PATH = "iot.db"
+DB_PATH = PRODUCTION_DB_PATH if os.path.exists(os.path.dirname(PRODUCTION_DB_PATH) or "") else LOCAL_DB_PATH
 
 # swagger configuration
 swagger_config = {

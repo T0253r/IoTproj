@@ -7,8 +7,10 @@ import sys
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - INIT_DB - %(message)s')
 
-DB_PATH = "/opt/iot/db/iot.db"
-#DB_PATH = "iot.db" # relative path for testing
+# Auto-detect production vs testing environment
+PRODUCTION_DB_PATH = "/opt/iot/db/iot.db"
+LOCAL_DB_PATH = "iot.db"
+DB_PATH = PRODUCTION_DB_PATH if os.path.exists(os.path.dirname(PRODUCTION_DB_PATH) or "") else LOCAL_DB_PATH
 
 def main():
 
