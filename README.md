@@ -1,32 +1,69 @@
-# System sterowania ogrzewaniem w domu jednorodzinnym
+# System sterowania ogrzewaniem (IoT)
 
-## Quick Start
+System do zarządzania ogrzewaniem w domu jednorodzinnym, wykorzystujący Raspberry Pi jako centralny serwer oraz mikrokontrolery (Arduino) jako sterowniki.
 
-**Instalacja:** (Utwórz środowisko wirtualne)
-```bash
-pip install -r requirements.txt
-```
+## Struktura projektu
 
-**Uruchomienie aplikacji webowej:**
+Projekt składa się z kilku głównych komponentów:
+
+*   **Raspberry Pi (Backend & WebApp):**
+    *   `webapp.py` - Aplikacja webowa oparta na Flask, umożliwiająca interakcję użytkownika z systemem.
+    *   `heating_manager.py` - Usługa działająca w tle, odpowiedzialna za komunikację MQTT z kontrolerami, odczyt temperatur i sterowanie ogrzewaniem (manualne/automatyczne).
+    *   `devices_monitor.py` - Usługa monitorująca podłączone urządzenia w sieci lokalnej i aktualizująca ich status w bazie danych.
+    *   `db_init.py` - Skrypt inicjalizujący bazę danych SQLite.
+
+*   **Arduino:**
+    *   Kod dla mikrokontrolerów pełniących funkcję sterowników i czujników.
+
+*   **Mock Scripts:**
+    *   Skrypty generujące przykładowe dane (kontrolery, urządzenia) do celów testowych i deweloperskich.
+
+## Wymagania
+
+*   Python 3.x
+*   Biblioteki wymienione w `requirements.txt`
+*   Broker MQTT (np. Mosquitto)
+
+## Instalacja
+
+Zalecane jest użycie środowiska wirtualnego.
+
+1.  Utwórz i aktywuj środowisko wirtualne (opcjonalnie):
+    ```bash
+    python -m venv venv
+    source venv/bin/activate  # Linux/Mac
+    # venv\Scripts\activate   # Windows
+    ```
+
+2.  Zainstaluj wymagane zależności:
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+## Szybki Start
+
+Aby uruchomić aplikację w trybie deweloperskim z przykładowymi danymi, użyj skryptu `run_webapp.py`. Skrypt ten automatycznie:
+1.  Sprawdza zależności.
+2.  Inicjalizuje nową bazę danych `iot.db` (usuwając poprzednią).
+3.  Tworzy przykładowe kontrolery i urządzenia (mock data).
+4.  Weryfikuje zawartość bazy danych.
+5.  Uruchamia serwer developerski Flask.
+
+**Uruchomienie:**
+
 ```bash
 python run_webapp.py
 ```
-Zostanie zainicjowana baza danych i utworzone dane testowe. Aplikacja uruchomi się pod adresem http://localhost:5000
 
-## Co robi kod i jak ma być odpalany
- - db_init.py - inicjalizacja bazy danych, odpalany ręcznie
- - heating_manager.py - komunikuje się ze kontrolerami po mqtt, czyta z bazy potrzebne dane (temperatury zadane przez użytkowników, dane o temperaturach aktualnych  i automatycznych oraz dane o podłączonych urządzeniach), jest odpowiedzialny za ustawianie zadanych temperatur na sterownikach (manulanych i automatycznych), działa jako system service
- - devices_monitor.py - aktualizacja informacji o podłączonych urządzeniach w bazie danych, działa jako system service
- - web_server.py - serwer webowy na którym użytkownicy mogą sobie klikać i ogólnie wchodzić w interakcję, pisze po bazie danych, nie komunikuje się po mqtt, trzeba użyć gunicorn (albo czegoś innego) do odpalenia tego jako system service
+Aplikacja będzie dostępna pod adresem: [http://localhost:5000](http://localhost:5000)
+Dokumentacja API (jeśli dostępna): [http://localhost:5000/api/docs](http://localhost:5000/api/docs)
 
- ### Robimy jeden requirements.txt i nie robimy venvów na malinie
- Ostatnio wyszły z tego problemy, a jak tamten kod ma działać jako system service to lepiej wszystkie dependency zainstalować ogólnosystemowo
+## Uruchomienie poszczególnych usług
 
- ### Lokacja bazy danych
- Dalej nie wiem czy lepiej jest aby to była jakaś względna czy bezwzględna ścieżka, ale na razie wydaje mi się że lepiej to zrobić bezwzględnie (łatwiej usługi systemowe skonfigurować)
- Aktualna ścieżka bazy: **/opt/iot/db/iot.db**
+W środowisku docelowym (np. na Raspberry Pi), usługi powinny działać niezależnie (np. jako serwisy systemd).
 
- ### Kanały mqtt
-  - controllers/x/target-temp -> malina publikuje zadane temperatury dla sterownika z ID = x
-  - controllers/x/curr-temp -> sterownik z ID = x publikuje odczytaną temperaturę
-Te dwa tematy per sterownik wystarczą, bo i tak są wysyłane regularne update'y, które działają jako heartbeat
+*   **Aplikacja Webowa:** `python Raspberry/webapp.py` (lub przez Gunicorn)
+*   **Heating Manager:** `python Raspberry/heating_manager.py`
+*   **Device Monitor:** `python Raspberry/devices_monitor.py`
+
+Pamiętaj o wcześniejszym zainicjowaniu bazy danych za pomocą `python Raspberry/db_init.py`.
